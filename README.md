@@ -19,9 +19,6 @@ Bash
 
 How to Run the Script
 Execute the script from your terminal or IDE:
-
-Bash
-python Checklist.py
 Enter the target repository information when prompted: 
  - Enter GitHub Organization/Owner: octocat(example)
  - Enter Repository Name: Spoon-Knife(example)
