@@ -3,6 +3,7 @@ import sys
 import json
 import base64
 import requests
+import textwrap
 from openrouter import OpenRouter
 
 # 1. Initialize API Clients from Environment Variables
@@ -27,6 +28,7 @@ def load_benchmarks_from_json(file_path="security_benchmarks.json"):
             data = json.load(f)
 
         formatted_list = []
+
         for item in data.get("benchmarks", []):
             formatted_list.append(f"- {item['control']}: {item['description']}")
         return "\n".join(formatted_list)
@@ -37,7 +39,8 @@ def load_benchmarks_from_json(file_path="security_benchmarks.json"):
 
 def get_pipeline_files_from_github(repo_owner, repo_name):
     """Fetches the text content of all YAML files from the remote GitHub directory."""
-    target_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/.github/workflows"
+    #target_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/.github/workflows"
+    target_url = f"https://api.github.com/repos/wrkode/virtrigaud/contents/.github/workflows"
     headers = {"Accept": "application/vnd.github.v3+json"}
 
     if GITHUB_TOKEN:
@@ -75,16 +78,24 @@ def analyze_pipeline_with_openrouter(yaml_content, benchmarks_text, filename):
     )
 
     user_prompt = f"""
-Please audit the following CI/CD configuration file against our required security benchmarks.
-
-REQUIRED BENCHMARKS:
-{benchmarks_text}
-
-YAML PIPELINE FILE CONTENT ({filename}):
-```yaml
-{yaml_content}
-```
-"""
+    Audit this YAML configuration against the security benchmarks.
+    Return a raw JSON list of objects matching exactly this schema:
+    [
+      {{
+        "control": "Name of the security control",
+        "status": "IMPLEMENTED or MISSING or NOT APPLICABLE",
+        "evidence": "Observations from the YAML file",
+        "action_required": "Remediation step if missing"
+      }}
+    ]
+    
+    REQUIRED BENCHMARKS:
+    {benchmarks_text}
+    
+    YAML PIPELINE FILE CONTENT ({filename}):
+    ```yaml
+    {yaml_content}
+    """
 
     try:
         # Core OpenRouter cloud generation connection block
@@ -100,6 +111,43 @@ YAML PIPELINE FILE CONTENT ({filename}):
     except Exception as e:
         return f"[!] OpenRouter Cloud Completion processing failed: {e}"
 
+
+def convert_json_to_fixed_table(json_string):
+    try:
+        clean_json = json_string.strip().strip("`").replace("json\n", "")
+        audit_data = json.loads(clean_json)
+
+        # Set fixed widths for each of the 4 columns
+        w_control, w_status, w_evidence, w_action = 16, 12, 35, 30
+
+        # Define a row template string
+        row_fmt = "| {:<16} | {:<12} | {:<35} | {:<30} |"
+        divider = "+" + "-" * 18 + "+" + "-" * 14 + "+" + "-" * 37 + "+" + "-" * 32 + "+"
+
+        lines = [divider, row_fmt.format("Security Control", "Status", "Evidence", "Action Required"), divider]
+
+        for item in audit_data:
+            # Wrap long sentences into chunks that fit our width boundaries
+            c_lines = textwrap.wrap(item.get("control", "N/A"), width=w_control) or [""]
+            s_lines = textwrap.wrap(item.get("status", "N/A"), width=w_status) or [""]
+            e_lines = textwrap.wrap(item.get("evidence", "N/A"), width=w_evidence) or [""]
+            a_lines = textwrap.wrap(item.get("action_required", "N/A"), width=w_action) or [""]
+
+            # Find out which column has the most lines after wrapping
+            max_rows = max(len(c_lines), len(s_lines), len(e_lines), len(a_lines))
+
+            # Print the wrapped lines cleanly line-by-line
+            for i in range(max_rows):
+                c = c_lines[i] if i < len(c_lines) else ""
+                s = s_lines[i] if i < len(s_lines) else ""
+                e = e_lines[i] if i < len(e_lines) else ""
+                a = a_lines[i] if i < len(a_lines) else ""
+                lines.append(row_fmt.format(c, s, e, a))
+            lines.append(divider)
+
+        return "\n".join(lines)
+    except Exception as e:
+        return f"[!] Table conversion failed: {e}\n{json_string}"
 
 if __name__ == "__main__":
     print("=== Interactive DevSecOps Pipeline Auditor ===")
@@ -125,9 +173,11 @@ if __name__ == "__main__":
 
             # 4. Map findings across every individual workflow file
             for filename, yaml_text in workflows.items():
-                print(f"\n" + "="*60)
-                print(f"AUDIT REPORT FOR CONFIGURATION: {filename}")
-                print("="*60)
+                print(f"\n" + "-"*91)
+                print(f"AUDIT REPORT FOR CONFIGURATION: {filename}".center(91))
+                print("-"*91)
+                raw_ai_response = analyze_pipeline_with_openrouter(yaml_text, benchmarks, filename)
 
-                report_table = analyze_pipeline_with_openrouter(yaml_text, benchmarks, filename)
+                # Pass it through the formatter to get a perfect table every time
+                report_table = convert_json_to_fixed_table(raw_ai_response)
                 print(report_table)
