@@ -1,0 +1,238 @@
+{
+  "benchmarks": [
+    {
+      "control": "Secret Scanning",
+      "stage": "pre-build",
+      "severity": "Critical",
+      "description": "The pipeline must scan source code and repository contents for exposed secrets such as API keys, passwords, tokens, and private keys using tools such as Gitleaks, TruffleHog, or GitHub Secret Scanning."
+    },
+    {
+      "control": "Static Application Security Testing (SAST)",
+      "stage": "pre-build",
+      "severity": "High",
+      "description": "The pipeline must run a SAST scanner appropriate for the application language (e.g., CodeQL, Semgrep, SonarQube, Bandit) to identify security vulnerabilities in source code."
+    },
+    {
+      "control": "Dependency Vulnerability Scanning (CVE Checks)",
+      "stage": "pre-build",
+      "severity": "High",
+      "description": "The pipeline must scan third-party dependencies and libraries against known vulnerabilities and CVEs before building the application."
+    },
+    {
+      "control": "Software Bill of Materials (SBOM) Generation",
+      "stage": "pre-build",
+      "severity": "Medium",
+      "description": "The pipeline should generate an SBOM containing software components and dependencies using formats such as CycloneDX or SPDX."
+    },
+    {
+      "control": "SBOM Signing",
+      "stage": "pre-build",
+      "severity": "High",
+      "description": "The pipeline should cryptographically sign generated SBOM files to ensure integrity and authenticity."
+    },
+    {
+      "control": "License Compliance Scanning",
+      "stage": "pre-build",
+      "severity": "Medium",
+      "description": "The pipeline should scan dependencies for license compliance issues using tools such as FOSSA, Black Duck, or license-checker."
+    },
+    {
+      "control": "Policy-as-Code Validation",
+      "stage": "pre-build",
+      "severity": "High",
+      "description": "The pipeline should enforce security policies automatically using policy-as-code tools such as Open Policy Agent (OPA) or Conftest."
+    },
+    {
+      "control": "Secret Management",
+      "stage": "global",
+      "severity": "Critical",
+      "description": "The pipeline must retrieve secrets through approved secret management systems such as HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, or CI/CD secret stores instead of storing secrets directly in source code or pipeline configuration."
+    },
+    {
+      "control": "Pinned CI/CD Actions and Dependencies",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline must pin external actions, plugins, and dependencies to trusted versions or immutable commit hashes instead of using mutable references such as latest or main."
+    },
+    {
+      "control": "Isolated Build Environment",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline must execute builds in isolated environments such as ephemeral runners or dedicated containers to prevent cross-build contamination."
+    },
+    {
+      "control": "Pinned Build Images",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline must use trusted and version-pinned build images or immutable image digests instead of mutable image tags."
+    },
+    {
+      "control": "Build SBOM Generation",
+      "stage": "build",
+      "severity": "Medium",
+      "description": "The pipeline must generate an SBOM for produced artifacts or container images."
+    },
+    {
+      "control": "Artifact Vulnerability Scanning",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline must scan generated artifacts and packages for known vulnerabilities before publishing or deployment."
+    },
+    {
+      "control": "Container Image Security Scanning",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline must scan container images for vulnerable packages, malware, and insecure configurations using tools such as Trivy, Grype, or Clair."
+    },
+    {
+      "control": "Artifact Signing",
+      "stage": "build",
+      "severity": "Critical",
+      "description": "The pipeline must cryptographically sign software artifacts such as binaries or container images to ensure authenticity and prevent tampering."
+    },
+    {
+      "control": "SBOM Signing for Build Artifacts",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline should sign SBOM files generated from build artifacts to protect software supply chain integrity."
+    },
+    {
+      "control": "Build Provenance Generation",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline should generate provenance metadata describing how and where software artifacts were built, such as SLSA provenance."
+    },
+    {
+      "control": "Security Quality Gates",
+      "stage": "build",
+      "severity": "High",
+      "description": "The pipeline must enforce security thresholds and fail builds when vulnerabilities exceed defined severity limits."
+    },
+    {
+      "control": "Secret Scanning of Build Artifacts",
+      "stage": "test",
+      "severity": "High",
+      "description": "The pipeline should scan generated artifacts and build outputs to detect accidentally included secrets."
+    },
+    {
+      "control": "Unit Testing",
+      "stage": "test",
+      "severity": "Medium",
+      "description": "The pipeline must execute automated unit tests to validate individual software components."
+    },
+    {
+      "control": "Integration Testing",
+      "stage": "test",
+      "severity": "Medium",
+      "description": "The pipeline must execute integration tests to validate interactions between application components."
+    },
+    {
+      "control": "Functional Testing",
+      "stage": "test",
+      "severity": "Medium",
+      "description": "The pipeline must execute functional tests to validate expected application behavior."
+    },
+    {
+      "control": "Infrastructure as Code (IaC) Misconfiguration Scanning",
+      "stage": "test",
+      "severity": "High",
+      "description": "The pipeline must scan Terraform, Kubernetes manifests, CloudFormation, Dockerfiles, and other infrastructure definitions for security misconfigurations using tools such as Checkov, tfsec, KICS, or Hadolint."
+    },
+    {
+      "control": "Dynamic Application Security Testing (DAST)",
+      "stage": "test",
+      "severity": "High",
+      "description": "The pipeline should perform runtime security testing against deployed test environments to identify vulnerabilities such as injection flaws and authentication issues."
+    },
+    {
+      "control": "API Security Testing",
+      "stage": "test",
+      "severity": "High",
+      "description": "The pipeline should test APIs for authentication, authorization, input validation, and security weaknesses."
+    },
+    {
+      "control": "Fuzz Testing",
+      "stage": "test",
+      "severity": "Medium",
+      "description": "The pipeline should perform fuzz testing where applicable to detect unexpected application behavior caused by malformed inputs."
+    },
+    {
+      "control": "Smoke Testing",
+      "stage": "test",
+      "severity": "Medium",
+      "description": "The pipeline should execute smoke tests to verify application availability before deployment."
+    },
+    {
+      "control": "Least Privilege Permissions",
+      "stage": "global",
+      "severity": "Critical",
+      "description": "Pipeline tokens, service accounts, and authentication mechanisms must use minimum required permissions and avoid excessive administrative privileges."
+    },
+    {
+      "control": "Secret Masking",
+      "stage": "global",
+      "severity": "High",
+      "description": "The pipeline should prevent secrets from appearing in logs by using CI/CD masking mechanisms or explicit secret masking configurations."
+    },
+    {
+      "control": "Short-Lived Credentials",
+      "stage": "global",
+      "severity": "Critical",
+      "description": "The pipeline should use temporary credentials or workload identity federation such as OIDC instead of storing long-lived static credentials."
+    },
+    {
+      "control": "Artifact Signature Verification",
+      "stage": "deploy",
+      "severity": "Critical",
+      "description": "The deployment pipeline must verify artifact signatures before deploying software."
+    },
+    {
+      "control": "SBOM Signature Verification",
+      "stage": "deploy",
+      "severity": "High",
+      "description": "The deployment pipeline should verify SBOM signatures before accepting software artifacts."
+    },
+    {
+      "control": "Build Provenance Verification",
+      "stage": "deploy",
+      "severity": "High",
+      "description": "The deployment pipeline should verify artifact provenance information before deployment."
+    },
+    {
+      "control": "Deployment Approval Gate",
+      "stage": "deploy",
+      "severity": "High",
+      "description": "Production deployments should require approval or protected environment controls before execution."
+    },
+    {
+      "control": "OIDC / Workload Identity Authentication",
+      "stage": "deploy",
+      "severity": "Critical",
+      "description": "The pipeline should use federated identity mechanisms instead of storing static cloud provider credentials."
+    },
+    {
+      "control": "Secure Secret Retrieval During Deployment",
+      "stage": "deploy",
+      "severity": "Critical",
+      "description": "Deployment jobs must retrieve secrets securely from approved secret management systems."
+    },
+    {
+      "control": "Signed Image Enforcement",
+      "stage": "deploy",
+      "severity": "Critical",
+      "description": "The deployment process must ensure only trusted and signed container images are deployed."
+    },
+    {
+      "control": "Post Deployment Health Check",
+      "stage": "deploy",
+      "severity": "Medium",
+      "description": "The pipeline should validate successful deployment using health checks or readiness checks."
+    },
+    {
+      "control": "Deployment Rollback Mechanism",
+      "stage": "deploy",
+      "severity": "Medium",
+      "description": "The pipeline should provide automated rollback capability when deployment failures occur."
+    }
+  ]
+}
