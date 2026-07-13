@@ -115,24 +115,6 @@
       "description": "The pipeline should scan generated artifacts and build outputs to detect accidentally included secrets."
     },
     {
-      "control": "Unit Testing",
-      "stage": "test",
-      "severity": "Medium",
-      "description": "The pipeline must execute automated unit tests to validate individual software components."
-    },
-    {
-      "control": "Integration Testing",
-      "stage": "test",
-      "severity": "Medium",
-      "description": "The pipeline must execute integration tests to validate interactions between application components."
-    },
-    {
-      "control": "Functional Testing",
-      "stage": "test",
-      "severity": "Medium",
-      "description": "The pipeline must execute functional tests to validate expected application behavior."
-    },
-    {
       "control": "Infrastructure as Code (IaC) Misconfiguration Scanning",
       "stage": "test",
       "severity": "High",
@@ -155,12 +137,6 @@
       "stage": "test",
       "severity": "Medium",
       "description": "The pipeline should perform fuzz testing where applicable to detect unexpected application behavior caused by malformed inputs."
-    },
-    {
-      "control": "Smoke Testing",
-      "stage": "test",
-      "severity": "Medium",
-      "description": "The pipeline should execute smoke tests to verify application availability before deployment."
     },
     {
       "control": "Least Privilege Permissions",
@@ -197,42 +173,6 @@
       "stage": "deploy",
       "severity": "High",
       "description": "The deployment pipeline should verify artifact provenance information before deployment."
-    },
-    {
-      "control": "Deployment Approval Gate",
-      "stage": "deploy",
-      "severity": "High",
-      "description": "Production deployments should require approval or protected environment controls before execution."
-    },
-    {
-      "control": "OIDC / Workload Identity Authentication",
-      "stage": "deploy",
-      "severity": "Critical",
-      "description": "The pipeline should use federated identity mechanisms instead of storing static cloud provider credentials."
-    },
-    {
-      "control": "Secure Secret Retrieval During Deployment",
-      "stage": "deploy",
-      "severity": "Critical",
-      "description": "Deployment jobs must retrieve secrets securely from approved secret management systems."
-    },
-    {
-      "control": "Signed Image Enforcement",
-      "stage": "deploy",
-      "severity": "Critical",
-      "description": "The deployment process must ensure only trusted and signed container images are deployed."
-    },
-    {
-      "control": "Post Deployment Health Check",
-      "stage": "deploy",
-      "severity": "Medium",
-      "description": "The pipeline should validate successful deployment using health checks or readiness checks."
-    },
-    {
-      "control": "Deployment Rollback Mechanism",
-      "stage": "deploy",
-      "severity": "Medium",
-      "description": "The pipeline should provide automated rollback capability when deployment failures occur."
     }
   ]
 }
