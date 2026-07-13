@@ -93,6 +93,7 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
     for filename, content in files_dictionary.items():
         yaml_payload_text += f"\n--- START OF FILE: {filename} ---\n{content}\n--- END OF FILE: {filename} ---\n"
 
+    # FIXME: How is severity computed here? I think severity should be in the security benchmark not in the prompt.
     user_prompt =f"""
     Audit the following collection of YAML configuration files as a UNIFIED CI/CD pipeline network.
     
@@ -132,7 +133,7 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
             ],
             temperature=0.1  # Low temperature keeps the structure clean and predictable
         )
-        return response.choices[0].message.content
+        return response.choices[0].message.content # FIXME: It is possible to force the model to use a given type. use pydantic.  
     except Exception as e:
         return f"[!] OpenRouter Cloud Completion processing failed: {e}"
 
@@ -195,11 +196,13 @@ if __name__ == "__main__":
 
     # 2. Extract benchmarks string from your clean JSON
     benchmarks = load_benchmarks_from_json("security_benchmarks.json")
+    # FIXME: if no benchmark fail fast
+    
 
     if benchmarks:
         # --- NEW METRIC: Calculate Total Controls from JSON Data ---
         try:
-            with open("security_benchmarks.json", "r", encoding="utf-8") as bf:
+            with open("security_benchmarks.json", "r", encoding="utf-8") as bf: # FIXME: benchmarks are already loaded!!! We know the format of benchmark data, no need to guess
                 benchmark_data = json.load(bf)
 
             # If your JSON is a top-level list of controls:
@@ -226,6 +229,7 @@ if __name__ == "__main__":
 
         if not workflows:
             print("[*] No workflow configurations found to audit.")
+            # TODO: exit with message
         else:
             print(f"\n[*] Found {len(workflows)} workflow file(s). Starting the Scan....")
 
@@ -247,7 +251,7 @@ if __name__ == "__main__":
                 missing_controls_count = len(filtered_results)
 
                 # 3. Re-serialize back to a string and send to your existing formatter
-                clean_json_for_table = json.dumps(filtered_results)
+                clean_json_for_table = json.dumps(filtered_results) # FIXME: There is no need to convert to json as you have already the data in filtered_results
                 report_table = convert_json_to_fixed_table(clean_json_for_table)
                 print(report_table)
 
@@ -260,8 +264,12 @@ if __name__ == "__main__":
                     print(
                         f"AUDIT ALERT: Found {missing_controls_count} missing security control gap(s) across your workflows!")
                 print("-" * 105)
-
+                # TODO: there should be a way to store the report (json). 
+                # XXX: Is it possible to provide some additional context to the user when some steps are missing?
+                # XXX: Can we give IDs to controls? 
+                # FIXME: when controls are missing return 1 as the resturn value of the script because the program fails.  
             except Exception as json_err:
                 # Fallback if the OpenRouter endpoint fails or returns plain text errors
                 print(f"\n[!] Could not generate table dashboard. Raw engine response:")
                 print(raw_ai_response)
+                # FIXME: also here return 2
