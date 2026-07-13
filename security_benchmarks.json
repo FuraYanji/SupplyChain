@@ -26,16 +26,6 @@
       "description": "The pipeline should cryptographically sign generated SBOM files to ensure integrity and authenticity."
     },
     {
-      "control": "License Compliance Scanning",
-      "severity": "Medium",
-      "description": "The pipeline should scan dependencies for license compliance issues using tools such as FOSSA, Black Duck, or license-checker."
-    },
-    {
-      "control": "Policy-as-Code Validation",
-      "severity": "High",
-      "description": "The pipeline should enforce security policies automatically using policy-as-code tools such as Open Policy Agent (OPA) or Conftest."
-    },
-    {
       "control": "Secret Management",
       "severity": "Critical",
       "description": "The pipeline must retrieve secrets through approved secret management systems such as HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, or CI/CD secret stores instead of storing secrets directly in source code or pipeline configuration."
