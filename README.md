@@ -22,3 +22,12 @@ Execute the script from your terminal or IDE:
 Enter the target repository information when prompted: 
  - Enter GitHub Organization/Owner: octocat(example)
  - Enter Repository Name: Spoon-Knife(example)
+
+## Testing
+ 
+ - https://github.com/kyverno/kyverno/tree/main
+ - https://github.com/nodejs/node
+ - https://github.com/nginx/nginx
+ - https://github.com/react/react
+ - https://github.com/rust-lang/rust
+ - https://github.com/anthropics/claude-code
