@@ -1,4 +1,6 @@
+
 import os
+import re
 import sys
 import json
 import base64
@@ -22,27 +24,37 @@ client = OpenRouter(api_key=OPENROUTER_API_KEY)
 def load_benchmarks_from_json(file_path="security_benchmarks.json"):
     """Loads complete benchmarks (Stage, Severity, Control & Description) from a local JSON file."""
     if not os.path.exists(file_path):
-        print(f"[!] Benchmark file not found at: {file_path}")
+        print(f"[!] Benchmark file not found at: {file_path}") #checks for the json file
         return None
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
+            data = json.load(f)  # 'data' is now our converted Python dictionary
+
+        # FIX 1: Safely pull the actual benchmarks array/list out of the dictionary
+        raw_benchmarks_list = data.get("benchmarks", [])
+
+        # FIX 2: Define and calculate the total controls count directly from the list length
+        total_controls_count = len(raw_benchmarks_list)
 
         formatted_list = []
 
-        # Iterate through the list of benchmarks
-        for item in data.get("benchmarks", []):
-            # Extract each individual field safely with default fallbacks
+        # FIX 1 (Continued): Enumerate over the actual parsed list variable!
+        for index, item in enumerate(raw_benchmarks_list, start=1):
             control = item.get('control', 'Unknown Control')
-            stage = item.get('stage', 'global').upper()
             severity = item.get('severity', 'Medium').upper()
             description = item.get('description', '')
 
-            # Combine them into a highly descriptive string for the LLM prompt
-            benchmark_line = f"- [{stage}] [SEVERITY: {severity}] {control}: {description}"
+            # Create our clean tracking ID (SEC-01, SEC-02)
+            control_id = f"SEC-{index:02d}"
+
+            benchmark_line = f"- [ID: {control_id}] [SEVERITY: {severity}] {control}: {description}"
             formatted_list.append(benchmark_line)
 
-        return "\n".join(formatted_list)
+        formatted_string = "\n".join(formatted_list)
+
+        # Both variables are now perfectly defined and ready to return!
+        return formatted_string, total_controls_count
+
     except Exception as e:
         print(f"[!] Error reading JSON benchmarks: {e}")
         return None
@@ -50,8 +62,8 @@ def load_benchmarks_from_json(file_path="security_benchmarks.json"):
 
 def get_pipeline_files_from_github(repo_owner, repo_name):
     """Fetches the text content of all YAML files from the remote GitHub directory."""
-    #target_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/.github/workflows"
-    target_url = f"https://api.github.com/repos/wrkode/virtrigaud/contents/.github/workflows"
+    target_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/contents/.github/workflows"
+    #target_url = f"https://api.github.com/repos/wrkode/virtrigaud/contents/.github/workflows"
     headers = {"Accept": "application/vnd.github.v3+json"}
 
     if GITHUB_TOKEN:
@@ -103,12 +115,16 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
     3. If a security control is successfully implemented in AT LEAST ONE relevant workflow file (e.g., secret scanning runs in ci.yml), then that control is considered COMPLIANT for the entire repository. Do NOT mark it as MISSING in other files like deploy.yml or build.yml.
     4. Only flag a control as MISSING if it is completely absent across the ENTIRE repository where it should logically be running.
     
-    Return a unified flat JSON list of objects matching exactly this schema:
+    CRITICAL RULES FOR SECURITY IDENTIFIERS (IDs):
+    - You must extract the unique identifier (e.g., SEC-01, SEC-02) from the [ID: ...] prefix of each benchmark listed below.
+    - Match this ID exactly and populate it into the "id" field for every identified missing control. Do NOT invent new IDs.
+
+    Return a unified flat JSON list of objects matching exactly this schema (Return ONLY raw JSON, no markdown backticks like ```json):
     [
       {{
+        "id": "The extracted tracking ID from the benchmark (e.g., SEC-01)",
         "filename": "The primary file where this gap exists or where it should logically be fixed",
         "control": "Name of the security control",
-        "stage": "The stage of the control (e.g., pre-build, build, test, deploy)",
         "severity": "CRITICAL, HIGH, MEDIUM, or LOW",
         "status": "MISSING",
         "evidence": "Clear explanation of why this control is absent across the pipeline ecosystem",
@@ -137,139 +153,174 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
     except Exception as e:
         return f"[!] OpenRouter Cloud Completion processing failed: {e}"
 
+def parse_ai_json_array(raw_string):
+    """Parses the AI's JSON array response, stripping a ```json ... ``` (or plain ``` ... ```)
+    markdown fence first if the model added one despite being told not to."""
+    cleaned = raw_string.strip()
+    if cleaned.startswith("```"):
+        cleaned = cleaned[3:].lstrip()
+        if cleaned.lower().startswith("json"):
+            cleaned = cleaned[4:]
+        cleaned = cleaned.strip()
+    if cleaned.endswith("```"):
+        cleaned = cleaned[:-3].strip()
+    return json.loads(cleaned)
+
+
+# Column spec shared by the table body and the divider/title-box width calculation:
+# (header label, JSON key, column width)
+TABLE_COLUMNS = [
+    ("Security ID", "id", 10),
+    ("Security Control", "control", 18),
+    ("Filename", "filename", 20),
+    ("Severity", "severity", 10),
+    ("Status", "status", 12),
+    ("Evidence", "evidence", 30),
+    ("Action Required", "action_required", 25),
+]
+
+TABLE_ROW_FMT = " | ".join("{:<%d}" % width for _, _, width in TABLE_COLUMNS) + " |"
+TABLE_DIVIDER = "+" + "+".join("-" * (width + 2) for _, _, width in TABLE_COLUMNS) + "+"
+TABLE_WIDTH = len(TABLE_DIVIDER)
+
+
 def convert_json_to_fixed_table(json_string):
     try:
-        # Clean potential markdown wrappers around the JSON block
-        clean_json = json_string.strip().strip("`").replace("json\n", "")
-        audit_data = json.loads(clean_json)
-
-        # 1. Set fixed widths for all 6 columns now
-        w_control, w_stage, w_severity, w_status, w_evidence, w_action = 18, 10, 10, 12, 30, 25
-
-        # 2. Define our 6-column text format string and a clean geometric line divider
-        row_fmt = "| {:<18} | {:<10} | {:<10} | {:<12} | {:<30} | {:<25} |"
-        divider = "+" + "-" * 20 + "+" + "-" * 12 + "+" + "-" * 12 + "+" + "-" * 14 + "+" + "-" * 32 + "+" + "-" * 27 + "+"
+        audit_data = parse_ai_json_array(json_string)
 
         # Initialize the table with headers
         lines = [
-            divider,
-            row_fmt.format("Security Control", "Stage", "Severity", "Status", "Evidence", "Action Required"),
-            divider
+            TABLE_DIVIDER,
+            TABLE_ROW_FMT.format(*(label for label, _, _ in TABLE_COLUMNS)),
+            TABLE_DIVIDER
         ]
 
         for item in audit_data:
-            # 3. Wrap long sentences smoothly inside their column text boundaries
-            c_lines = textwrap.wrap(item.get("control", "N/A"), width=w_control) or [""]
-            st_lines = textwrap.wrap(item.get("stage", "N/A"), width=w_stage) or [""]
-            sev_lines = textwrap.wrap(item.get("severity", "N/A"), width=w_severity) or [""]
-            s_lines = textwrap.wrap(item.get("status", "N/A"), width=w_status) or [""]
-            e_lines = textwrap.wrap(item.get("evidence", "N/A"), width=w_evidence) or [""]
-            a_lines = textwrap.wrap(item.get("action_required", "N/A"), width=w_action) or [""]
+            # Wrap long sentences smoothly inside their column text boundaries
+            wrapped_cols = [
+                textwrap.wrap(str(item.get(key, "N/A")), width=width) or [""]
+                for _, key, width in TABLE_COLUMNS
+            ]
 
             # Find the vertical line height needed for the current row
-            max_rows = max(len(c_lines), len(st_lines), len(sev_lines), len(s_lines), len(e_lines), len(a_lines))
+            max_rows = max(len(col) for col in wrapped_cols)
 
-            # 4. Construct the stackesad row line-by-line
+            # Construct the row line-by-line
             for i in range(max_rows):
-                c = c_lines[i] if i < len(c_lines) else ""
-                st = st_lines[i] if i < len(st_lines) else ""
-                sev = sev_lines[i] if i < len(sev_lines) else ""
-                s = s_lines[i] if i < len(s_lines) else ""
-                e = e_lines[i] if i < len(e_lines) else ""
-                a = a_lines[i] if i < len(a_lines) else ""
-                lines.append(row_fmt.format(c, st, sev, s, e, a))
+                row_values = [col[i] if i < len(col) else "" for col in wrapped_cols]
+                lines.append(TABLE_ROW_FMT.format(*row_values))
 
-            lines.append(divider)
+            lines.append(TABLE_DIVIDER)
 
         return "\n".join(lines)
     except Exception as e:
         return f"[!] Table conversion failed: {e}\n{json_string}"
 
+def parse_github_repo(raw_input):
+    """Extracts (owner, repo) from a GitHub URL, SSH remote, or "owner/repo" shorthand."""
+    text = raw_input.strip()
+
+    ssh_match = re.match(r"^git@github\.com:([^/]+)/([^/]+?)(\.git)?/?$", text)
+    if ssh_match:
+        return ssh_match.group(1), ssh_match.group(2)
+
+    text = re.sub(r"^https?://(www\.)?github\.com/", "", text)
+    text = text.strip("/")
+    text = re.sub(r"\.git$", "", text)
+
+    parts = text.split("/")
+    if len(parts) >= 2 and parts[0] and parts[1]:
+        return parts[0], parts[1]
+    return None, None
+
+
 if __name__ == "__main__":
-    # 1. Ask user interactively for target repository
-    owner = input("Enter GitHub Organization/Owner (e.g., kubernetes): ").strip()
-    repo = input("Enter Repository Name (e.g., grievances): ").strip()
+    # 1. Ask user interactively for the target repository (URL, SSH remote, or owner/repo shorthand)
+    target_input = input(
+        "Enter GitHub repo URL "
+    ).strip()
+    owner, repo = parse_github_repo(target_input)
 
     if not owner or not repo:
-        print("[!] Target repository details cannot be empty.")
+        print(" Could not parse an owner/repo from that input.")
         sys.exit(1)
 
     # 2. Extract benchmarks string from your clean JSON
-    benchmarks = load_benchmarks_from_json("security_benchmarks.json")
-    # FIXME: if no benchmark fail fast
-    
+    benchmarks, total_controls_count  = load_benchmarks_from_json("security_benchmarks.json")
+    if not benchmarks:
+        print("No security benchmarks found.")
+        sys.exit(1)
 
-    if benchmarks:
-        # --- NEW METRIC: Calculate Total Controls from JSON Data ---
-        try:
-            with open("security_benchmarks.json", "r", encoding="utf-8") as bf: # FIXME: benchmarks are already loaded!!! We know the format of benchmark data, no need to guess
-                benchmark_data = json.load(bf)
-
-            # If your JSON is a top-level list of controls:
-            if isinstance(benchmark_data, list):
-                total_controls_count = len([item for item in benchmark_data if "control" in item])
-            # If your JSON has a top-level object containing a list (e.g., {"controls": [...]})
-            elif isinstance(benchmark_data, dict):
-                # We find the list within the dictionary keys dynamically
-                list_key = next((k for k, v in benchmark_data.items() if isinstance(v, list)), None)
-                if list_key:
-                    total_controls_count = len([item for item in benchmark_data[list_key] if "control" in item])
-                else:
-                    total_controls_count = len(benchmark_data)
-            else:
-                total_controls_count = 0
-
-            print(f" Loaded security checklist containing {total_controls_count} mandatory control rules.")
-
-        except Exception as err:
-            print(f"Could not parse benchmark metrics from file: {err}")
+    print(f" Loaded security checklist containing {total_controls_count} mandatory control rules.")
 
         # 3. Pull target YAML definitions from GitHub contents endpoint
-        workflows = get_pipeline_files_from_github(owner, repo)
+    workflows = get_pipeline_files_from_github(owner, repo)
 
-        if not workflows:
-            print("[*] No workflow configurations found to audit.")
-            # TODO: exit with message
-        else:
-            print(f"\n[*] Found {len(workflows)} workflow file(s). Starting the Scan....")
+    if not workflows:
+        print("[*] No workflow configurations found to audit.")
+        sys.exit(1)  # TODO: exit with message
+    else:
+        print(f"\n Found {len(workflows)} workflow file(s). Starting the Scan....")
 
-            print(f"\n" + "-" * 105)
-            print(f"SECURITY CONTROLS ON PIPELINE: {owner}/{repo}".center(105))
-            print("-" * 105)
+        print(f"\n" + "-" * TABLE_WIDTH)
+        print(f"SECURITY CONTROLS ON PIPELINE: {owner}/{repo}".center(TABLE_WIDTH))
+        print("-" * TABLE_WIDTH)
 
-            # Pass the complete dictionary of workflows straight to the batch function
-            raw_ai_response = analyze_all_pipelines_batch(workflows, benchmarks)
+        # Pass the complete dictionary of workflows straight to the batch function
+        raw_ai_response = analyze_all_pipelines_batch(workflows, benchmarks)
 
-            try:
-                # 1. Parse the AI response to verify it's valid JSON
-                raw_results = json.loads(raw_ai_response)
+        try:
+            # 1. Parse the AI response to verify it's valid JSON
+            raw_results = parse_ai_json_array(raw_ai_response)
 
-                # 2. Filter the array to keep only rows where the status is MISSING
-                filtered_results = [row for row in raw_results if row.get("status") == "MISSING"]
+            # 2. Filter the array to keep only rows where the status is MISSING
+            filtered_results = [row for row in raw_results if row.get("status") == "MISSING"]
 
-                # --- METRIC: Count Missing Controls Found ---
-                missing_controls_count = len(filtered_results)
+            # --- METRIC: Count Missing Controls Found ---
+            missing_controls_count = len(filtered_results)
 
-                # 3. Re-serialize back to a string and send to your existing formatter
-                clean_json_for_table = json.dumps(filtered_results) # FIXME: There is no need to convert to json as you have already the data in filtered_results
-                report_table = convert_json_to_fixed_table(clean_json_for_table)
-                print(report_table)
+            # 3. Re-serialize back to a string and send to your existing formatter
+            report_table = convert_json_to_fixed_table(raw_ai_response)
+            print(report_table)
 
-                # 4. Print metrics summary at the very bottom
-                print("-" * 105)
-                if missing_controls_count == 0:
-                    print(
-                        f"AUDIT SUCCESS: 0 gaps found. All processed workflows comply with your security checklist.")
-                else:
-                    print(
-                        f"AUDIT ALERT: Found {missing_controls_count} missing security control gap(s) across your workflows!")
-                print("-" * 105)
-                # TODO: there should be a way to store the report (json). 
-                # XXX: Is it possible to provide some additional context to the user when some steps are missing?
-                # XXX: Can we give IDs to controls? 
-                # FIXME: when controls are missing return 1 as the resturn value of the script because the program fails.  
-            except Exception as json_err:
-                # Fallback if the OpenRouter endpoint fails or returns plain text errors
-                print(f"\n[!] Could not generate table dashboard. Raw engine response:")
-                print(raw_ai_response)
-                # FIXME: also here return 2
+            # 4. Print metrics summary at the very bottom
+            print("-" * TABLE_WIDTH)
+            if missing_controls_count == 0:
+                print(
+                    f"AUDIT SUCCESS: 0 gaps found. All processed workflows comply with your security checklist.")
+                sys.exit(0)
+            else:
+                print(
+                    f"AUDIT ALERT: Found {missing_controls_count} missing security control gap(s) across your workflows!")
+                print("-" * TABLE_WIDTH)
+                # --- SAVE REPORT ONLY IF GAPS ARE FOUND ---
+                folder_name = "Results"
+                os.makedirs(folder_name, exist_ok=True) #make the folder if doesnot exit
+
+                report_filename = f"audit_report_{owner}_{repo}.json"
+                full_report_path = os.path.join(folder_name, report_filename)
+
+                try:
+                    with open(full_report_path, "w", encoding="utf-8") as f:
+                        # Write the filtered list of missing controls as pretty-printed JSON
+                        json.dump(filtered_results, f, indent=4)
+                    print(f" Missing controls found! Detailed report saved to: {report_filename}")
+                except Exception as file_err:
+                    print(f" Warning: Could not write report file: {file_err}")
+
+                print(
+                    f"AUDIT ALERT: Found {missing_controls_count} missing security controls."
+                )
+                print("-" * TABLE_WIDTH)
+                #sys.exit(1)
+
+            # TODO: there should be a way to store the report (json).(DONE)
+            # XXX: Is it possible to provide some additional context to the user when some steps are missing?
+            # XXX: Can we give IDs to controls? (done)
+            # FIXME: when controls are missing return 1 as the resturn value of the script because the program fails.
+        except Exception as json_err:
+            # Fallback if the OpenRouter endpoint fails or returns plain text errors
+            print(f"\n[!] Could not generate table dashboard. Raw engine response:")
+            print(raw_ai_response)
+            sys.exit(2)
+            # FIXME: also here return 2
