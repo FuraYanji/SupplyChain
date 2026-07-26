@@ -1,4 +1,3 @@
-
 import os
 import re
 import sys
@@ -6,6 +5,8 @@ import json
 import base64
 import requests
 import textwrap
+from typing import List, Literal
+from pydantic import BaseModel, ConfigDict, ValidationError
 from openrouter import OpenRouter
 
 # 1. Initialize API Clients from Environment Variables
@@ -19,6 +20,26 @@ if not OPENROUTER_API_KEY:
     sys.exit(1)
 
 client = OpenRouter(api_key=OPENROUTER_API_KEY)
+
+
+class MissingControlFinding(BaseModel):
+    """One missing-control row - forces the model onto this exact shape/types."""
+    model_config = ConfigDict(extra="forbid")
+
+    id: str
+    filename: str
+    control: str
+    severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]
+    status: Literal["MISSING"]
+    evidence: str
+    action_required: str
+
+
+class AuditFindings(BaseModel):
+    """Top-level structured-output envelope (OpenAI/OpenRouter json_schema mode requires an object, not a bare array)."""
+    model_config = ConfigDict(extra="forbid")
+
+    findings: List[MissingControlFinding]
 
 
 def load_benchmarks_from_json(file_path="security_benchmarks.json"):
@@ -139,17 +160,44 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
     {yaml_payload_text}
     """
 
-    try:
-        # Core OpenRouter cloud generation connection block
-        response = client.chat.send(
+    structured_response_format = {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "missing_security_controls",
+            "strict": True,
+            "schema": AuditFindings.model_json_schema(),
+        },
+    }
+
+    def _send(with_structured_output):
+        return client.chat.send(
             model=MODEL,  # This was pointed to "openrouter/free" or a single string
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.1  # Low temperature keeps the structure clean and predictable
+            temperature=0.1,  # Low temperature keeps the structure clean and predictable
+            response_format=structured_response_format if with_structured_output else None,
         )
-        return response.choices[0].message.content # FIXME: It is possible to force the model to use a given type. use pydantic.  
+
+    try:
+        # Core OpenRouter cloud generation connection block
+        try:
+            response = _send(with_structured_output=True)
+        except Exception:
+            # Some models/providers on this route reject the response_format param entirely -
+            # fall back to the free-text prompt, which the rest of the pipeline can still parse.
+            response = _send(with_structured_output=False)
+
+        raw_content = response.choices[0].message.content
+
+        # If the model honored the schema it returns {"findings": [...]}; unwrap that back into
+        # the flat findings array the rest of the pipeline (table/report) already expects.
+        try:
+            validated = AuditFindings.model_validate_json(raw_content)
+            return json.dumps([finding.model_dump() for finding in validated.findings])
+        except (ValidationError, json.JSONDecodeError, TypeError):
+            return raw_content
     except Exception as e:
         return f"[!] OpenRouter Cloud Completion processing failed: {e}"
 
@@ -235,9 +283,9 @@ def parse_github_repo(raw_input):
 
 
 if __name__ == "__main__":
-    # 1. Ask user interactively for the target repository (URL, SSH remote, or owner/repo shorthand)
+    #Asking interactively for the target repository URL
     target_input = input(
-        "Enter GitHub repo URL "
+        "Enter GitHub repo URL:"
     ).strip()
     owner, repo = parse_github_repo(target_input)
 
@@ -263,7 +311,7 @@ if __name__ == "__main__":
         print(f"\n Found {len(workflows)} workflow file(s). Starting the Scan....")
 
         print(f"\n" + "-" * TABLE_WIDTH)
-        print(f"SECURITY CONTROLS ON PIPELINE: {owner}/{repo}".center(TABLE_WIDTH))
+        print(f"SECURITY CONTROLS ON PIPELINE".center(TABLE_WIDTH))
         print("-" * TABLE_WIDTH)
 
         # Pass the complete dictionary of workflows straight to the batch function
