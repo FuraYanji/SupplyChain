@@ -5,6 +5,7 @@ import json
 import base64
 import requests
 import textwrap
+from datetime import datetime
 from typing import List, Literal
 from pydantic import BaseModel, ConfigDict, ValidationError
 from openrouter import OpenRouter
@@ -283,7 +284,7 @@ def parse_github_repo(raw_input):
 
 
 if __name__ == "__main__":
-    #Asking interactively for the target repository URL
+    #Ask interactively for the target repository URL
     target_input = input(
         "Enter GitHub repo URL:"
     ).strip()
@@ -293,7 +294,7 @@ if __name__ == "__main__":
         print(" Could not parse an owner/repo from that input.")
         sys.exit(1)
 
-    # 2. Extract benchmarks string from your clean JSON
+    # Extract benchmarks string from your clean JSON
     benchmarks, total_controls_count  = load_benchmarks_from_json("security_benchmarks.json")
     if not benchmarks:
         print("No security benchmarks found.")
@@ -301,7 +302,7 @@ if __name__ == "__main__":
 
     print(f" Loaded security checklist containing {total_controls_count} mandatory control rules.")
 
-        # 3. Pull target YAML definitions from GitHub contents endpoint
+        # Pull target YAML definitions from GitHub contents endpoint
     workflows = get_pipeline_files_from_github(owner, repo)
 
     if not workflows:
@@ -335,17 +336,19 @@ if __name__ == "__main__":
             print("-" * TABLE_WIDTH)
             if missing_controls_count == 0:
                 print(
-                    f"AUDIT SUCCESS: 0 gaps found. All processed workflows comply with your security checklist.")
+                    f"AUDIT SUCCESS: 0 gaps found. All processed workflows comply with the security checklist.")
                 sys.exit(0)
             else:
                 print(
-                    f"AUDIT ALERT: Found {missing_controls_count} missing security control gap(s) across your workflows!")
+                    f"AUDIT ALERT: Found {missing_controls_count} missing security control gaps across your workflows!")
                 print("-" * TABLE_WIDTH)
                 # --- SAVE REPORT ONLY IF GAPS ARE FOUND ---
                 folder_name = "Results"
+                # Generate a timestamp like: 20260728_151458
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
                 os.makedirs(folder_name, exist_ok=True) #make the folder if doesnot exit
 
-                report_filename = f"audit_report_{owner}_{repo}.json"
+                report_filename = f"audit_report_{owner}_{repo}_{timestamp}.json"
                 full_report_path = os.path.join(folder_name, report_filename)
 
                 try:
