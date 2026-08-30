@@ -363,7 +363,7 @@ if __name__ == "__main__":
                     f"AUDIT ALERT: Found {missing_controls_count} missing security controls."
                 )
                 print("-" * TABLE_WIDTH)
-                #sys.exit(1)
+                sys.exit(1)
 
             # TODO: there should be a way to store the report (json).(DONE)
             # XXX: Is it possible to provide some additional context to the user when some steps are missing?
