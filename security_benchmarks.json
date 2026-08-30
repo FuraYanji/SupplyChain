@@ -3,7 +3,7 @@
     {
       "control": "Secret Scanning",
       "severity": "Critical",
-      "description": "The pipeline must scan source code and repository contents for exposed secrets such as API keys, passwords, tokens, and private keys using tools such as Gitleaks, TruffleHog, or GitHub Secret Scanning."
+      "description": "The pipeline must include a workflow step that runs a dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) against the source code \u2014 identified by an actual `uses:` action or `run:` command invoking one of these tools, not just a step name suggesting security. Only check for evidence within the workflow YAML files provided; do not assume GitHub's native repository-level Secret Scanning setting is enabled or disabled, since that setting is not visible in workflow files."
     },
     {
       "control": "Static Application Security Testing (SAST)",
@@ -13,127 +13,109 @@
     {
       "control": "Dependency Vulnerability Scanning (CVE Checks)",
       "severity": "High",
-      "description": "The pipeline must scan third-party dependencies and libraries against known vulnerabilities and CVEs before building the application."
+      "description": "The pipeline must scan third-party dependencies and libraries against known CVEs before building or deploying the application, using a tool such as Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, or OWASP Dependency-Check \u2014 identified by an actual `uses:` action or `run:` command, not a job name alone."
     },
     {
-      "control": "Software Bill of Materials (SBOM) Generation",
+      "control": "Source-Level SBOM Generation",
       "severity": "Medium",
-      "description": "The pipeline should generate an SBOM containing software components and dependencies using formats such as CycloneDX or SPDX."
+      "description": "The pipeline must generate an SBOM (CycloneDX or SPDX format) covering the project's source-level dependencies (e.g., from package manifests like package.json, go.mod, requirements.txt) using a tool such as Syft, cdxgen, or an equivalent SBOM generator invoked via `uses:` or `run:` \u2014 evaluated independently of any SBOM generated later for build artifacts."
     },
     {
-      "control": "SBOM Signing",
+      "control": "Source SBOM Signing",
       "severity": "High",
-      "description": "The pipeline should cryptographically sign generated SBOM files to ensure integrity and authenticity."
+      "description": "The pipeline must cryptographically sign the source-level SBOM (e.g., via `cosign sign` or an in-toto attestation)."
+    },
+    {
+      "control": "Build Artifact SBOM Generation",
+      "severity": "Medium",
+      "description": "The pipeline must generate a separate SBOM (CycloneDX or SPDX format) covering the produced build artifact or container image itself, using a tool such as Syft targeting the built image/artifact \u2014 evaluated independently of source-level SBOM generation."
+    },
+    {
+      "control": "Build Artifact SBOM Signing",
+      "severity": "High",
+      "description": "The pipeline must cryptographically sign the build artifact SBOM using a tool such as `cosign attach-sbom` combined with `cosign sign`."
     },
     {
       "control": "Secret Management",
       "severity": "Critical",
-      "description": "The pipeline must retrieve secrets through approved secret management systems such as HashiCorp Vault, AWS Secrets Manager, Azure Key Vault, or CI/CD secret stores instead of storing secrets directly in source code or pipeline configuration."
+      "description": "Workflow YAML files must not contain hardcoded credential values (API keys, passwords, tokens) written directly as plain text \u2014 all secret values must be referenced through the platform's secrets mechanism (e.g., `${{ secrets.* }}` in GitHub Actions) rather than embedded literally in the workflow file. This check targets the pipeline configuration files themselves, distinct from the Secret Scanning control, which targets application source code."
     },
     {
       "control": "Pinned CI/CD Actions and Dependencies",
       "severity": "High",
-      "description": "The pipeline must pin external actions, plugins, and dependencies to trusted versions or immutable commit hashes instead of using mutable references such as latest or main."
+      "description": "The pipeline must pin third-party GitHub Actions to a full-length immutable commit SHA (e.g., `uses: actions/checkout@<40-char-sha>`) rather than a mutable tag or branch reference (e.g., `@main`, `@latest`, or a movable version tag like `@v4`). A pinned major-version tag from a well-known first-party action (e.g., `actions/checkout@v4`) should be flagged as partial compliance, not full pass, unless pinned to a SHA."
     },
     {
       "control": "Isolated Build Environment",
       "severity": "High",
-      "description": "The pipeline must execute builds in isolated environments such as ephemeral runners or dedicated containers to prevent cross-build contamination."
+      "description": "The pipeline must execute build/test jobs on ephemeral, isolated runners (GitHub-hosted runners by default, or explicitly containerized self-hosted runners) rather than persistent, shared, long-lived infrastructure."
     },
     {
       "control": "Pinned Build Images",
       "severity": "High",
-      "description": "The pipeline must use trusted and version-pinned build images or immutable image digests instead of mutable image tags."
+      "description": "Dockerfiles and container-based build steps must reference base images by immutable digest (e.g., `FROM node:20-alpine@sha256:...`) or at minimum a specific version tag, not a floating tag such as `latest` or an untagged reference."
     },
     {
-      "control": "Build SBOM Generation",
-      "severity": "Medium",
-      "description": "The pipeline must generate an SBOM for produced artifacts or container images."
-    },
-    {
-      "control": "Artifact Vulnerability Scanning",
+      "control": "Artifact & Container Image Vulnerability Scanning",
       "severity": "High",
-      "description": "The pipeline must scan generated artifacts and packages for known vulnerabilities before publishing or deployment."
-    },
-    {
-      "control": "Container Image Security Scanning",
-      "severity": "High",
-      "description": "The pipeline must scan container images for vulnerable packages, malware, and insecure configurations using tools such as Trivy, Grype, or Clair."
+      "description": "The pipeline must scan the final build output for known vulnerabilities before publishing or deployment. If the pipeline builds a container image, this must be a container-aware scanner (Trivy, Grype, or Clair) scanning the built image. If the pipeline produces a non-container artifact (library package, binary, tarball), an appropriate dependency/artifact scanner (Trivy in filesystem mode, npm audit, pip-audit, OWASP Dependency-Check) satisfies this control instead. Do not require both \u2014 evaluate based on what the pipeline actually builds."
     },
     {
       "control": "Artifact Signing",
       "severity": "Critical",
-      "description": "The pipeline must cryptographically sign software artifacts such as binaries or container images to ensure authenticity and prevent tampering."
-    },
-    {
-      "control": "SBOM Signing for Build Artifacts",
-      "severity": "High",
-      "description": "The pipeline should sign SBOM files generated from build artifacts to protect software supply chain integrity."
+      "description": "The pipeline must cryptographically sign the produced artifact (container image via Cosign/Sigstore, or binary/package via GPG or platform-native signing such as npm provenance). The artifact that is signed must be the same artifact instance that was tested \u2014 evidenced by the pipeline building the artifact once and reusing that same build output (via a fixed image tag/digest or uploaded build artifact) across test, sign, and later deploy steps, rather than rebuilding it again at any later stage."
     },
     {
       "control": "Build Provenance Generation",
       "severity": "High",
-      "description": "The pipeline should generate provenance metadata describing how and where software artifacts were built, such as SLSA provenance."
-    },
-    {
-      "control": "Security Quality Gates",
-      "severity": "High",
-      "description": "The pipeline must enforce security thresholds and fail builds when vulnerabilities exceed defined severity limits."
+      "description": "The pipeline must generate signed build provenance metadata describing how, where, and from what source commit the artifact was built (e.g., SLSA provenance via `actions/attest-build-provenance`, in-toto attestations, or `cosign attest`) \u2014 distinct from Artifact Signing, which only covers artifact integrity, not build origin."
     },
     {
       "control": "Secret Scanning of Build Artifacts",
       "severity": "High",
-      "description": "The pipeline should scan generated artifacts and build outputs to detect accidentally included secrets."
+      "description": "The pipeline must scan the built artifact or container image itself (not just source code) for accidentally embedded secrets. This is distinct from source-level Secret Scanning and requires the scan to target the built output, not the repository."
     },
     {
       "control": "Infrastructure as Code (IaC) Misconfiguration Scanning",
       "severity": "High",
-      "description": "The pipeline must scan Terraform, Kubernetes manifests, CloudFormation, Dockerfiles, and other infrastructure definitions for security misconfigurations using tools such as Checkov, tfsec, KICS, or Hadolint."
+      "description": "The pipeline must scan Terraform, Kubernetes manifests, CloudFormation, Dockerfiles, or other infrastructure definitions for security misconfigurations using a tool such as Checkov, tfsec, KICS, or Hadolint, invoked via `uses:` or `run:`. Only applicable if the repository contains IaC/manifest files of these types.",
+      "applicable_only_if": "repository contains Terraform, Kubernetes manifests, CloudFormation templates, or Dockerfiles"
     },
     {
       "control": "Dynamic Application Security Testing (DAST)",
       "severity": "High",
-      "description": "The pipeline should perform runtime security testing against deployed test environments to identify vulnerabilities such as injection flaws and authentication issues."
-    },
-    {
-      "control": "API Security Testing",
-      "severity": "High",
-      "description": "The pipeline should test APIs for authentication, authorization, input validation, and security weaknesses."
+      "description": "The pipeline must attack-test a running instance of the application (web UI or API) using a tool such as OWASP ZAP, Burp Suite, or Schemathesis. Evidence requires a sequence: a step that starts/deploys the application, followed by a step pointing a DAST tool at that live address \u2014 a tool reference alone without a corresponding live-target step is not sufficient. Only applicable if the project exposes an HTTP/GraphQL network surface as part of its own pipeline; not applicable to libraries, CLIs, language runtimes, or services that only consume external APIs without exposing their own.",
+      "applicable_only_if": "the project's own CI pipeline deploys something and exposes it over a network address during the pipeline run"
     },
     {
       "control": "Fuzz Testing",
       "severity": "Medium",
-      "description": "The pipeline should perform fuzz testing where applicable to detect unexpected application behavior caused by malformed inputs."
+      "description": "The pipeline must feed malformed/random input into functions that parse or process untrusted data (network input, file formats, language parsers) using a tool such as libFuzzer, AFL++, go-fuzz, jsfuzz, or OSS-Fuzz/ClusterFuzzLite integration \u2014 evidenced by a `fuzz/` or `test/fuzzers/` directory, OSS-Fuzz config files, or a workflow step invoking a fuzzing binary. Distinct from DAST: applicable regardless of whether the project exposes a network endpoint."
     },
     {
-      "control": "Least Privilege Permissions",
+      "control": "Least Privilege Permissions (Token Scoping)",
       "severity": "Critical",
-      "description": "Pipeline tokens, service accounts, and authentication mechanisms must use minimum required permissions and avoid excessive administrative privileges."
-    },
-    {
-      "control": "Secret Masking",
-      "severity": "High",
-      "description": "The pipeline should prevent secrets from appearing in logs by using CI/CD masking mechanisms or explicit secret masking configurations."
-    },
-    {
-      "control": "Short-Lived Credentials",
-      "severity": "Critical",
-      "description": "The pipeline should use temporary credentials or workload identity federation such as OIDC instead of storing long-lived static credentials."
+      "description": "Workflow tokens must follow least privilege: top-level `permissions:` should default to read-only (`contents: read` or equivalent minimal scope), with any required write access declared explicitly at the job level, scoped only to what that specific job needs. Flag workflows missing a `permissions:` block entirely or setting `permissions: write-all` at either level."
     },
     {
       "control": "Artifact Signature Verification",
       "severity": "Critical",
-      "description": "The deployment pipeline must verify artifact signatures before deploying software."
-    },
-    {
-      "control": "SBOM Signature Verification",
-      "severity": "High",
-      "description": "The deployment pipeline should verify SBOM signatures before accepting software artifacts."
+      "description": "Before deploying to any live environment (staging or production), the pipeline must verify the artifact's signature (e.g., `cosign verify`) against a trusted public key. This is a re-verification of a signature created earlier at build time, not a new signing operation."
     },
     {
       "control": "Build Provenance Verification",
       "severity": "High",
-      "description": "The deployment pipeline should verify artifact provenance information before deployment."
+      "description": "Before deploying to any live environment, the pipeline must verify the artifact's build provenance attestation matches the expected source repository and commit."
+    },
+    {
+      "control": "Dangerous Workflow Trigger + Untrusted Checkout Combination",
+      "severity": "Critical",
+      "description": "No workflow may combine a privileged trigger (`pull_request_target` or `workflow_run`) with an explicit checkout of the pull request's head code (e.g., `ref: ${{ github.event.pull_request.head.sha }}`) within the same job. `pull_request_target` alone \u2014 without an explicit PR-head checkout in the same job \u2014 is a common, legitimate pattern (auto-labeling, PR comments, stale-issue bots) and must not be flagged on its own. A job gated with `if: github.event.label.name == ...` should be treated as reduced risk, not full failure."
+    },
+    {
+      "control": "Script Injection via Untrusted Context Variables",
+      "severity": "High",
+      "description": "No `run:` step may directly interpolate a user-controllable GitHub context value (e.g., `github.event.pull_request.title`, `github.event.issue.body`, `github.event.comment.body`, `github.head_ref`) into an inline shell command string \u2014 including on the unprivileged `pull_request` trigger. The safe equivalent passes the same value via an `env:` block instead of inline interpolation."
     }
   ]
 }
