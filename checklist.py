@@ -6,13 +6,13 @@ import base64
 import requests
 import textwrap
 from datetime import datetime
-from typing import List, Literal
+from typing import List, Literal, Tuple
 from pydantic import BaseModel, ConfigDict, ValidationError
 from openrouter import OpenRouter
 
 # 1. Initialize API Clients from Environment Variables
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+# GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
 MODEL = "openrouter/free"
 
 
@@ -28,7 +28,7 @@ class MissingControlFinding(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str
-    filename: str
+    #filename: str
     control: str
     severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]
     status: Literal["MISSING"]
@@ -37,17 +37,17 @@ class MissingControlFinding(BaseModel):
 
 
 class AuditFindings(BaseModel):
-    """Top-level structured-output envelope (OpenAI/OpenRouter json_schema mode requires an object, not a bare array)."""
+    """Top-level structured-output envelope (OpenAI/OpenRouter JSON_schema mode requires an object, not a bare array)."""
     model_config = ConfigDict(extra="forbid")
 
     findings: List[MissingControlFinding]
 
 
-def load_benchmarks_from_json(file_path="security_benchmarks.json"):
+def load_benchmarks_from_json(file_path="security_benchmarks.json") -> Tuple[str, int]:
     """Loads complete benchmarks (Stage, Severity, Control & Description) from a local JSON file."""
     if not os.path.exists(file_path):
         print(f"[!] Benchmark file not found at: {file_path}") #checks for the json file
-        return None
+
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)  # 'data' is now our converted Python dictionary
@@ -79,7 +79,7 @@ def load_benchmarks_from_json(file_path="security_benchmarks.json"):
 
     except Exception as e:
         print(f"[!] Error reading JSON benchmarks: {e}")
-        return None
+
 
 
 def get_pipeline_files_from_github(repo_owner, repo_name):
@@ -88,8 +88,9 @@ def get_pipeline_files_from_github(repo_owner, repo_name):
     #target_url = f"https://api.github.com/repos/wrkode/virtrigaud/contents/.github/workflows"
     headers = {"Accept": "application/vnd.github.v3+json"}
 
-    if GITHUB_TOKEN:
-        headers["Authorization"] = f"token {GITHUB_TOKEN}"
+    # NOTE: Because we are only checking public repositories, this might not be needed
+    # if GITHUB_TOKEN:
+    #     headers["Authorization"] = f"token {GITHUB_TOKEN}"
 
     response = requests.get(target_url, headers=headers)
     if response.status_code == 404:
@@ -116,48 +117,32 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
     """Bundles all YAML files together to run a single batch audit, returning ONLY missing controls."""
 
     system_instruction = (
-        "You are an expert DevSecOps compliance auditor. Your job is to verify whether the provided "
-        "CI/CD pipeline configurations satisfy our mandatory security controls. "
-        "CRITICAL RULE: You must only output findings where the status is 'MISSING'. "
-        "Do not include controls that are 'IMPLEMENTED' or 'NOT APPLICABLE' in your output array. "
-        "You must output your findings exclusively as a flat raw JSON array of objects."
+        """
+        You are an expert DevSecOps compliance auditor.Your task is to identify security controls that are MISSING from the repository's CI/CD pipeline ecosystem.Follow the security benchmarks provided by the user exactly.
+        """
     )
 
+    #combining all the yml files and turing into a one string for AI to analyze entire repository
     yaml_payload_text = ""
     for filename, content in files_dictionary.items():
         yaml_payload_text += f"\n--- START OF FILE: {filename} ---\n{content}\n--- END OF FILE: {filename} ---\n"
 
     # FIXME: How is severity computed here? I think severity should be in the security benchmark not in the prompt.
     user_prompt =f"""
-    Audit the following collection of YAML configuration files as a UNIFIED CI/CD pipeline network.
-    
-    CRITICAL COGNITIVE RULES TO PREVENT DUPLICATES:
-    1. Do NOT evaluate files in isolation. Evaluate the repository as a whole ecosystem.
-    2. A security control only belongs in its logical stage (e.g., Secret Scanning belongs in pre-build/test). 
-    3. If a security control is successfully implemented in AT LEAST ONE relevant workflow file (e.g., secret scanning runs in ci.yml), then that control is considered COMPLIANT for the entire repository. Do NOT mark it as MISSING in other files like deploy.yml or build.yml.
-    4. Only flag a control as MISSING if it is completely absent across the ENTIRE repository where it should logically be running.
-    
-    CRITICAL RULES FOR SECURITY IDENTIFIERS (IDs):
-    - You must extract the unique identifier (e.g., SEC-01, SEC-02) from the [ID: ...] prefix of each benchmark listed below.
-    - Match this ID exactly and populate it into the "id" field for every identified missing control. Do NOT invent new IDs.
+    1. Do not evaluate files in isolation.
+    2. If a control is implemented in at least one relevant workflow,
+    consider it compliant for the repository.
+    3. Only report a control as MISSING if it is absent across the entire
+    repository where it should logically run.
+    4. Extract the security ID exactly from the benchmark.
+    5. Do not invent IDs.
 
-    Return a unified flat JSON list of objects matching exactly this schema (Return ONLY raw JSON, no markdown backticks like ```json):
-    [
-      {{
-        "id": "The extracted tracking ID from the benchmark (e.g., SEC-01)",
-        "filename": "The primary file where this gap exists or where it should logically be fixed",
-        "control": "Name of the security control",
-        "severity": "CRITICAL, HIGH, MEDIUM, or LOW",
-        "status": "MISSING",
-        "evidence": "Clear explanation of why this control is absent across the pipeline ecosystem",
-        "action_required": "Remediation step required to fix this global pipeline gap"
-      }}
-    ]
+    Return the findings using the required schema.
     
-    REQUIRED GLOBAL BENCHMARKS TO TEST AGAINST:
+    BENCHMARKS:
     {benchmarks_text}
     
-    REPOSITORY YAML PIPELINE FILES (THE Ecosystem):
+    PIPELINE FILES:
     {yaml_payload_text}
     """
 
@@ -166,31 +151,35 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
         "json_schema": {
             "name": "missing_security_controls",
             "strict": True,
-            "schema": AuditFindings.model_json_schema(),
+            "schema": AuditFindings.model_json_schema(), #converts pydantic model into JSON schema
         },
     }
 
     def _send(with_structured_output):
         return client.chat.send(
-            model=MODEL,  # This was pointed to "openrouter/free" or a single string
+            model=MODEL,
             messages=[
                 {"role": "system", "content": system_instruction},
                 {"role": "user", "content": user_prompt}
             ],
             temperature=0.1,  # Low temperature keeps the structure clean and predictable
             response_format=structured_response_format if with_structured_output else None,
+
         )
 
     try:
-        # Core OpenRouter cloud generation connection block
         try:
             response = _send(with_structured_output=True)
-        except Exception:
+        except Exception: #this is too broad and is responding same no proper structure so it should be made precise to only the structure error
             # Some models/providers on this route reject the response_format param entirely -
-            # fall back to the free-text prompt, which the rest of the pipeline can still parse.
+            # fall back to the free-text prompt, which the rest of the script can still parse.
             response = _send(with_structured_output=False)
 
         raw_content = response.choices[0].message.content
+
+        #checking if the returned response is String or not before parsing it.
+        if not isinstance(raw_content, str):
+            return "[!] Model returned no text content."
 
         # If the model honored the schema it returns {"findings": [...]}; unwrap that back into
         # the flat findings array the rest of the pipeline (table/report) already expects.
@@ -200,11 +189,11 @@ def analyze_all_pipelines_batch(files_dictionary, benchmarks_text):
         except (ValidationError, json.JSONDecodeError, TypeError):
             return raw_content
     except Exception as e:
-        return f"[!] OpenRouter Cloud Completion processing failed: {e}"
+        return f"[!] OpenRouter failed: {e}"
 
 def parse_ai_json_array(raw_string):
     """Parses the AI's JSON array response, stripping a ```json ... ``` (or plain ``` ... ```)
-    markdown fence first if the model added one despite being told not to."""
+    mark-down fence first if the model added one despite being told not to."""
     cleaned = raw_string.strip()
     if cleaned.startswith("```"):
         cleaned = cleaned[3:].lstrip()
@@ -221,7 +210,7 @@ def parse_ai_json_array(raw_string):
 TABLE_COLUMNS = [
     ("Security ID", "id", 10),
     ("Security Control", "control", 18),
-    ("Filename", "filename", 20),
+    #("Filename", "filename", 20),
     ("Severity", "severity", 10),
     ("Status", "status", 12),
     ("Evidence", "evidence", 30),
@@ -306,8 +295,7 @@ if __name__ == "__main__":
     workflows = get_pipeline_files_from_github(owner, repo)
 
     if not workflows:
-        print("[*] No workflow configurations found to audit.")
-        sys.exit(1)  # TODO: exit with message
+        sys.exit("No workflow configurations found to audit.")  # TODO: exit with message
     else:
         print(f"\n Found {len(workflows)} workflow file(s). Starting the Scan....")
 
@@ -346,7 +334,7 @@ if __name__ == "__main__":
                 folder_name = "Results"
                 # Generate a timestamp like: 20260728_151458
                 timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                os.makedirs(folder_name, exist_ok=True) #make the folder if doesnot exit
+                os.makedirs(folder_name, exist_ok=True) #make the folder if it does not exit
 
                 report_filename = f"audit_report_{owner}_{repo}_{timestamp}.json"
                 full_report_path = os.path.join(folder_name, report_filename)
@@ -365,13 +353,8 @@ if __name__ == "__main__":
                 print("-" * TABLE_WIDTH)
                 sys.exit(1)
 
-            # TODO: there should be a way to store the report (json).(DONE)
-            # XXX: Is it possible to provide some additional context to the user when some steps are missing?
-            # XXX: Can we give IDs to controls? (done)
-            # FIXME: when controls are missing return 1 as the resturn value of the script because the program fails.
         except Exception as json_err:
             # Fallback if the OpenRouter endpoint fails or returns plain text errors
             print(f"\n[!] Could not generate table dashboard. Raw engine response:")
             print(raw_ai_response)
             sys.exit(2)
-            # FIXME: also here return 2
