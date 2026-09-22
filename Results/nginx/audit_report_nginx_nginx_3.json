@@ -1,0 +1,114 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning: The pipeline must include a workflow step that runs a dedicated secret-scanning tool against the source code",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No secret-scanning tool (Gitleaks, TruffleHog, detect-secrets, ggshield) is invoked via `uses:` or `run:` in any provided workflow file.",
+        "action_required": "Implement a dedicated secret-scanning step (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) in at least one workflow to scan source code for secrets."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST): The pipeline must run a SAST scanner to identify security vulnerabilities in source code",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SAST tool is invoked via `uses:` or `run:` in any provided workflow file.",
+        "action_required": "Add a SAST scanner (e.g., CodeQL, Semgrep, SonarQube, Bandit) appropriate for the application language to at least one workflow."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning (CVE Checks): The pipeline must scan third-party dependencies against known CVEs",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No dependency vulnerability scanner is invoked via `uses:` or `run:` in any provided workflow file.",
+        "action_required": "Add a dependency vulnerability scanning step (e.g., Trivy, Grype, npm audit, pip-audit, Snyk) before build/deploy in at least one workflow."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation: The pipeline must generate an SBOM covering source-level dependencies",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No SBOM generation tool (Syft, cdxgen) is invoked via `uses:` or `run:` in any provided workflow file.",
+        "action_required": "Generate a source-level SBOM (CycloneDX or SPDX) using a tool like Syft or cdxgen in at least one workflow."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing: The pipeline must cryptographically sign the source-level SBOM",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SBOM signing step (cosign sign, in-toto) is present in any provided workflow file.",
+        "action_required": "Cryptographically sign the source-level SBOM using cosign sign or in-toto attestation in at least one workflow."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation: The pipeline must generate a separate SBOM for the build artifact",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No build-artifact SBOM generation tool is invoked in any provided workflow file.",
+        "action_required": "Generate a build-artifact SBOM (CycloneDX or SPDX) covering the produced artifact or container image using a tool like Syft."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing: The pipeline must cryptographically sign the build artifact SBOM",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build-artifact SBOM signing step is present in any provided workflow file.",
+        "action_required": "Cryptographically sign the build-artifact SBOM using cosign attach-sbom combined with cosign sign."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning: The pipeline must scan the final build output for known vulnerabilities",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No artifact/container vulnerability scanner (Trivy, Grype, npm audit, etc.) is invoked in any provided workflow file.",
+        "action_required": "Scan the final build output for known vulnerabilities before publishing/deployment using a container-aware or artifact-appropriate scanner."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing: The pipeline must cryptographically sign the produced artifact",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No artifact signing step (cosign sign, GPG sign, npm provenance) is present in any provided workflow file.",
+        "action_required": "Cryptographically sign the produced artifact (container image via Cosign/Sigstore, or binary/package via GPG or npm provenance)."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation: The pipeline must generate signed build provenance metadata",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build provenance generation step (actions/attest-build-provenance, cosign attest, in-toto) is present in any provided workflow file.",
+        "action_required": "Generate signed build provenance metadata (SLSA, in-toto, cosign attest) describing how, where, and from what source commit the artifact was built."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts: The pipeline must scan the built artifact for embedded secrets",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build-artifact secret scanning step is present in any provided workflow file.",
+        "action_required": "Scan the built artifact or container image itself for accidentally embedded secrets, distinct from source-level secret scanning."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing: The pipeline must feed malformed/random input into functions that parse or process untrusted data",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No fuzzing tool, fuzz/ directory, test/fuzzers/ directory, or OSS-Fuzz config is referenced in any provided workflow file.",
+        "action_required": "Add fuzz testing using a tool like libFuzzer, AFL++, go-fuzz, jsfuzz, or OSS-Fuzz/ClusterFuzzLite integration in at least one workflow or directory."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification: Before deploying to any live environment, the pipeline must verify the artifact's signature",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No artifact signature verification step (cosign verify) is present in any provided workflow file.",
+        "action_required": "Verify the artifact's signature (e.g., cosign verify) against a trusted public key before deploying to any live environment."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification: Before deploying to any live environment, the pipeline must verify build provenance",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build provenance verification step is present in any provided workflow file.",
+        "action_required": "Verify the artifact's build provenance attestation matches the expected source repository and commit before deploying to any live environment."
+    }
+]

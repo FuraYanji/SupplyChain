@@ -1,0 +1,98 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No dedicated secret scanning tool (Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) is invoked in any workflow YAML file. The `actions/checkout` is used for cloning but does not perform secret scanning.",
+        "action_required": "Add a secret scanning step (e.g., `uses: gitleaks/gitleak-scan@main` or equivalent) to scan source code for hardcoded credentials and sensitive information."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SAST scanner (CodeQL, Semgrep, SonarQube, Bandit, etc.) is invoked in any workflow YAML file. The pipelines rely solely on build actions and manual checks.",
+        "action_required": "Integrate a SAST tool into the build pipeline to analyze source code for security vulnerabilities before merging."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No dependency vulnerability scanner (Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, OWASP Dependency-Check) is used to scan third-party dependencies against known CVEs.",
+        "action_required": "Add a dependency scanning step early in the pipeline to identify vulnerable packages before building the application."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SBOM generation (CycloneDX or SPDX format) is performed from source dependencies. The `actions/checkout` is used but no SBOM tool is invoked.",
+        "action_required": "Implement an SBOM generation step (e.g., `cyberbasis/symstock` or `syft`) to create a source-level SBOM covering all dependencies."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No SBOM is generated for the built artifact or container image. The pipeline builds something (likely Nginx) but never creates an artifact SBOM.",
+        "action_required": "Add a step to generate an SBOM (CycloneDX or SPDX) for the final build artifact/container image."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The pipeline builds an artifact but never scans it for known vulnerabilities. There is no container-aware scanner (Trivy, Grype, Clair) or dependency/artifact scanner applied to the built output.",
+        "action_required": "Add a vulnerability scanner to scan the built container image or library package for CVEs before deployment."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No cryptographic signing of the produced artifact (container image via Cosign/Sigstore, or binary via GPG/npm provenance) is performed.",
+        "action_required": "Sign the artifact using a tool like `cosign sign` or `sgx-sign` to ensure integrity and authenticity."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The built artifact/container image is never scanned for accidentally embedded secrets after the build phase.",
+        "action_required": "Add a secret scanning step targeting the built artifact to detect any leaked credentials or API keys."
+    },
+    {
+        "id": "SEC-17",
+        "control": "Dynamic Application Security Testing (DAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No DAST tool (OWASP ZAP, Burp Suite, Schemathesis) is used to attack-test a running application instance.",
+        "action_required": "Add a DAST scanning step to test the deployed application for runtime vulnerabilities."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No fuzzing tool (libFuzzer, AFL++, go-fuzz, OSS-Fuzz) is invoked to feed malformed input into parsing functions.",
+        "action_required": "Integrate fuzz testing into the pipeline to validate input handling of critical components."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "Before deploying to any live environment, there is no verification of the artifact's cryptographic signature (e.g., `cosign verify`).",
+        "action_required": "Add a step to verify the artifact signature against a trusted public key prior to deployment."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No signed build provenance metadata (SLSA, in-toto, cosign attest) is generated describing how, where, and from what source commit the artifact was built.",
+        "action_required": "Generate build provenance using tools like `actions/attest-build-provenance` or `cosign attest` and attach it to the artifact."
+    }
+]

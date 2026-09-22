@@ -1,0 +1,98 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of a secret-scanning tool.",
+        "action_required": "Implement a dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian) in at least one workflow step that scans the source code."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The `codeql.yml` workflow uses `github/codeql-action` for CodeQL analysis, satisfying this control.",
+        "action_required": "Run a SAST scanner appropriate for the application language (e.g., CodeQL, Semgrep, SonarQube, Bandit) to identify security vulnerabilities in source code."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning (CVE Checks)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of a dependency vulnerability scanner.",
+        "action_required": "Scan third-party dependencies and libraries against known CVEs before building or deploying the application, using a tool such as Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, or OWASP Dependency-Check."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of an SBOM generator.",
+        "action_required": "Generate an SBOM (CycloneDX or SPDX format) covering the project's source-level dependencies using a tool such as Syft, cdxgen, or an equivalent SBOM generator."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of a signing tool for SBOMs.",
+        "action_required": "Cryptographically sign the source-level SBOM (e.g., via `cosign sign` or an in-toto attestation)."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of an SBOM generator targeting the build artifact.",
+        "action_required": "Generate a separate SBOM (CycloneDX or SPDX format) covering the produced build artifact or container image itself."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of a signing tool for the artifact SBOM.",
+        "action_required": "Cryptographically sign the build artifact SBOM using a tool such as `cosign attach-sbom` combined with `cosign sign`."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of an artifact vulnerability scanner.",
+        "action_required": "Scan the final build output for known vulnerabilities before publishing or deployment. If the pipeline builds a container image, this must be a container-aware scanner (Trivy, Grype, or Clair) scanning the built image. If the pipeline produces a non-container artifact, an appropriate dependency/artifact scanner (Trivy in filesystem mode, npm audit, pip-audit, OWASP Dependency-Check) satisfies this control instead."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of an artifact signing tool.",
+        "action_required": "Cryptographically sign the produced artifact (container image via Cosign/Sigstore, or binary/package via GPG or platform-native signing such as npm provenance). The artifact that is signed must be the same artifact instance that was tested."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of a build provenance generation tool.",
+        "action_required": "Generate signed build provenance metadata describing how, where, and from what source commit the artifact was built (e.g., SLSA provenance via `actions/attest-build-provenance`, in-toto attestations, or `cosign attest`)."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of a secret-scanning tool targeting the build artifact.",
+        "action_required": "Scan the built artifact or container image itself (not just source code) for accidentally embedded secrets."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow file contains a `uses:` or `run:` invocation of a fuzzing tool, and no `fuzz/` or `test/fuzzers/` directory is referenced in the provided pipeline files.",
+        "action_required": "Feed malformed/random input into functions that parse or process untrusted data (network input, file formats, language parsers) using a tool such as libFuzzer, AFL++, go-fuzz, jsfuzz, or OSS-Fuzz/ClusterFuzzLite integration."
+    }
+]

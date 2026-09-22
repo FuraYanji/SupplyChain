@@ -1,0 +1,106 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The workflow contains no dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) invoked via `uses:` or `run:`. Only a standard `actions/checkout` step is present.",
+        "action_required": "Add a secret scanning step (e.g., `uses: gitleaks/gitleak-scan-action@v6.0.1` or similar) to scan source code for secrets."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SAST scanner (e.g., CodeQL, Semgrep, SonarQube, Bandit) is invoked in the workflow. The pipeline only performs milestone assignment and PR updates.",
+        "action_required": "Introduce a SAST scanning step using an appropriate tool for the application language (e.g., CodeQL, Semgrep) with `uses:` or `run:`."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "There is no dependency vulnerability scanner (e.g., Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, OWASP Dependency-Check) invoked in the workflow.",
+        "action_required": "Add a dependency scanning step to scan third-party library dependencies against known CVEs."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step generates a source-level SBOM (CycloneDX or SPDX format) from package manifests (package.json, go.mod, requirements.txt, etc.).",
+        "action_required": "Implement an SBOM generation step using a tool like Syft, cdxgen, or similar, invoked via `uses:` or `run:`."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "The pipeline does not cryptographically sign the source-level SBOM after generation.",
+        "action_required": "Add a signing step (e.g., using cosign or in-toto) to sign the generated SBOM."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No step generates an SBOM for the built artifact or container image.",
+        "action_required": "Add a step to generate an artifact-level SBOM (CycloneDX or SPDX) using a tool like Syft targeting the built image/artifact."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "The pipeline does not sign the build artifact SBOM.",
+        "action_required": "Add a signing step to cryptographically sign the artifact SBOM."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The pipeline does not scan the final build output (container image or binary) for known vulnerabilities.",
+        "action_required": "Add a container-aware vulnerability scanner (Trivy, Grype, Clair) to scan the built image/artifact."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The pipeline does not cryptographically sign the produced artifact (container image, binary, package) before deployment.",
+        "action_required": "Add an artifact signing step (e.g., `cosign sign` or in-toto attestation) for the deployed artifact."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The pipeline does not generate signed build provenance metadata (SLSA, in-toto, cosign attest) describing how and from what source the artifact was built.",
+        "action_required": "Add a provenance generation step to create signed build provenance metadata."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The pipeline does not scan the built artifact or container image for accidentally embedded secrets after the fact.",
+        "action_required": "Add a step to scan the final build output (image/binary) for secrets using a secret scanner."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The pipeline does not verify the artifact's signature (e.g., `cosign verify`) against a trusted public key before deployment to staging/production environments.",
+        "action_required": "Add a verification step to re-verify the artifact's signature prior to deployment."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The pipeline does not verify the artifact's build provenance attestation matches the expected source repository and commit before deployment.",
+        "action_required": "Add a step to verify the build provenance attestation (e.g., via `cosign attest` or in-toto verification)."
+    }
+]

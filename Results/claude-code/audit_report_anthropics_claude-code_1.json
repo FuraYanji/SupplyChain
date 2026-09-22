@@ -1,0 +1,186 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No workflow step runs a dedicated secret-scanning tool (Gitleaks, TruffleHog, detect-secrets, ggshield) via `uses:` or `run:` command.",
+        "action_required": "Add a step that runs a secret-scanning tool against source code."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SAST scanner (CodeQL, Semgrep, SonarQube, Bandit) is invoked in any workflow.",
+        "action_required": "Integrate a language\u2011appropriate SAST scanner into the CI pipeline."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning (CVE Checks)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step runs Trivy, Grype, npm audit, pip-audit, etc. to scan dependencies.",
+        "action_required": "Add a dependency vulnerability scan before build/deploy."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No SBOM generation for source\u2011level dependencies (e.g., Syft, cdxgen) is present.",
+        "action_required": "Add a step that generates a source\u2011level SBOM."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No cryptographic signing of the source\u2011level SBOM (e.g., cosign sign) is performed.",
+        "action_required": "Sign the source\u2011level SBOM."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step generates an SBOM for the built artifact or container image.",
+        "action_required": "Generate a build\u2011artifact SBOM."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No signing of the build\u2011artifact SBOM (e.g., cosign attach\u2011sbom + cosign sign) is performed.",
+        "action_required": "Sign the build\u2011artifact SBOM."
+    },
+    {
+        "id": "SEC-08",
+        "control": "Secret Management",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "All workflow files reference secrets via `${{ secrets.* }}` and contain no hard\u2011coded credentials; thus this control is satisfied.",
+        "action_required": "None."
+    },
+    {
+        "id": "SEC-09",
+        "control": "Pinned CI/CD Actions and Dependencies",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Workflow `claude.yml` and `mod-tests.yml` pin `actions/checkout` to a full\u2011length SHA (11bd71901bbe5b1630ceea73d27597364c9af683), satisfying the requirement.",
+        "action_required": "None."
+    },
+    {
+        "id": "SEC-10",
+        "control": "Isolated Build Environment",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "All jobs run on `ubuntu-latest` (ephemeral GitHub\u2011hosted runners), meeting the isolation requirement.",
+        "action_required": "None."
+    },
+    {
+        "id": "SEC-11",
+        "control": "Pinned Build Images",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No Dockerfiles or container\u2011based build steps are present, so the requirement does not apply.",
+        "action_required": "None."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step scans the final build output (image or artifact) for CVEs.",
+        "action_required": "Add a vulnerability scan of the built artifact or image."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No cryptographic signing (Cosign, GPG, npm provenance) of the produced artifact is performed.",
+        "action_required": "Add artifact signing."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step generates signed build provenance (SLSA, in\u2011toto, cosign attest).",
+        "action_required": "Add build provenance generation and signing."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No scan of the built artifact or container image for embedded secrets is performed.",
+        "action_required": "Add a secret scan of the built output."
+    },
+    {
+        "id": "SEC-16",
+        "control": "Infrastructure as Code (IaC) Misconfiguration Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No IaC scanning step (Checkov, tfsec, etc.) is present; however, no IaC files are evident in the repository, so the control is not applicable.",
+        "action_required": "None (or add IaC scanning if IaC files exist)."
+    },
+    {
+        "id": "SEC-17",
+        "control": "Dynamic Application Security Testing (DAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step deploys a live instance and then runs a DAST tool (ZAP, Burp, Schemathesis) against it.",
+        "action_required": "Add a DAST testing stage that attacks a running app."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No fuzz testing directory, config, or step invoking a fuzzer is present.",
+        "action_required": "Add fuzz testing."
+    },
+    {
+        "id": "SEC-19",
+        "control": "Least Privilege Permissions (Token Scoping)",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "Workflow files lack a `permissions:` block or set `permissions: write-all`; the default is not read\u2011only. This violates least\u2011privilege requirements.",
+        "action_required": "Add explicit `permissions:` blocks with minimal scopes and avoid `write-all`."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No `cosign verify` (or equivalent) step is performed before deployment to live environments.",
+        "action_required": "Add verification of artifact signatures before deployment."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step verifies that the build provenance attestation matches the expected source commit before deployment.",
+        "action_required": "Add provenance verification before deployment."
+    },
+    {
+        "id": "SEC-22",
+        "control": "Dangerous Workflow Trigger + Untrusted Checkout Combination",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No workflow combines `pull_request_target` (or `workflow_run`) with an explicit checkout of the PR head in the same job; however, the condition check in `non-write-users-check.yml` uses `github.event.pull_request.number` which may be unsafe. The presence of such logic suggests a potential violation; a full audit is needed.",
+        "action_required": "Ensure no job combines privileged triggers with PR\u2011head checkouts; refactor if needed."
+    },
+    {
+        "id": "SEC-23",
+        "control": "Script Injection via Untrusted Context Variables",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Workflow steps do not interpolate context values directly into shell commands; they use environment variables, so this control appears satisfied.",
+        "action_required": "None."
+    }
+]

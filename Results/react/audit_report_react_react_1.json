@@ -1,0 +1,122 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No workflow contains a step invoking a dedicated secret-scanning tool (Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) against source code.",
+        "action_required": "Add a workflow step (e.g., `uses: gitleaks/gitleaks-action@v2` or `run: gitleaks detect`) to scan repository source code for secrets."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow runs a SAST scanner (CodeQL, Semgrep, SonarQube, Bandit) against the TypeScript/Rust source code.",
+        "action_required": "Add a SAST scanning job (e.g., `github/codeql-action` or `returntocorp/semgrep`) to the CI pipeline."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning (CVE Checks)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Workflows run `yarn install --frozen-lockfile` but never invoke a dependency vulnerability scanner (npm audit, yarn audit, Trivy, Grype, Snyk, OWASP Dependency-Check, cargo-audit, govulncheck, pip-audit).",
+        "action_required": "Add a dependency scanning step (e.g., `run: yarn audit --level=high` or `uses: aquasecurity/trivy-action@master` with `scan-type: 'fs'`) before build."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No workflow generates an SBOM (CycloneDX/SPDX) from source manifests (package.json, yarn.lock, Cargo.lock) using Syft, cdxgen, or equivalent.",
+        "action_required": "Add an SBOM generation step (e.g., `uses: anchore/sbom-action@v0` or `run: syft packages dir:. -o cyclonedx-json=sbom.json`) in the build pipeline."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No source-level SBOM is produced, therefore no signing step (cosign sign) exists.",
+        "action_required": "After generating the source SBOM (SEC-04), add a signing step: `run: cosign sign-blob --blob=sbom.json --output-signature=sbom.json.sig --output-certificate=sbom.json.cert`."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No workflow generates an SBOM for the built artifacts (npm packages, Rust crates, browser extensions) using a tool targeting the build output.",
+        "action_required": "Add a post-build SBOM step (e.g., `run: syft packages build/ -o cyclonedx-json=artifact-sbom.json`) in the artifact processing job."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build artifact SBOM is produced, therefore no `cosign attach-sbom` + `cosign sign` step exists.",
+        "action_required": "After generating the artifact SBOM (SEC-06), attach and sign it: `run: cosign attach-sbom --sbom=artifact-sbom.json <image-or-artifact> && cosign sign <image-or-artifact>`."
+    },
+    {
+        "id": "SEC-09",
+        "control": "Pinned CI/CD Actions and Dependencies",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Most third-party actions are referenced by mutable tags (e.g., `actions/checkout@v4`, `actions/setup-node@v4`, `actions/cache@v4`, `dtolnay/rust-toolchain@stable`, `rust-lang/crates-io-auth-action@v1`, `actions/attest-build-provenance@v2`, `actions/stale@v9`, `actions/github-script@v7`). Only `tsickert/discord-webhook@86dc739f3f165f16dadc5666051c367efa1692f4` is pinned to a full SHA.",
+        "action_required": "Pin every `uses:` reference to a full 40-character commit SHA (e.g., `actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683`)."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow scans the final build output (npm packages, Rust crates, browser extension zips) for known vulnerabilities using Trivy, Grype, or an appropriate artifact scanner.",
+        "action_required": "Add a post-build vulnerability scan step (e.g., `run: trivy fs --severity HIGH,CRITICAL build/` or `run: npm audit --production` on the staged packages) before publish."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The pipeline publishes npm packages via OIDC trusted publishing and Rust crates via `cargo publish`, but does not cryptographically sign the artifacts themselves (no `cosign sign` for containers, no GPG/npm provenance signing for packages/binaries). The `actions/attest-build-provenance` step generates provenance (SEC-14), not artifact signatures.",
+        "action_required": "Add artifact signing: for npm packages use `npm publish --provenance` (already enabled via OIDC) and verify provenance; for Rust crates consider `cargo publish --signed` with GPG; for any container images use `cosign sign`."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow scans the built artifacts (npm tarballs, Rust crate archives, browser extension zips) for embedded secrets.",
+        "action_required": "Add a secret scan step targeting the build output (e.g., `run: gitleaks detect --source=build/` or `run: trivy fs --scanners secret build/`)."
+    },
+    {
+        "id": "SEC-16",
+        "control": "Infrastructure as Code (IaC) Misconfiguration Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow invokes an IaC scanner (Checkov, tfsec, KICS, Hadolint). The repository may contain Dockerfiles or other IaC files not visible in the provided workflows, but no scanning step exists.",
+        "action_required": "If the repo contains Dockerfiles, Terraform, Kubernetes manifests, or CloudFormation templates, add a scanning step (e.g., `uses: bridgecrewio/checkov-action@v12` or `run: hadolint Dockerfile`)."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The release workflow (`runtime_release_from_ci.yml`) publishes to npm using OIDC but does not verify any artifact signature or provenance attestation before publishing.",
+        "action_required": "Before `npm publish`, add a verification step (e.g., `run: cosign verify-attestation --type=slsaprovenance <artifact>` or `run: npm attest verify <package>`)."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Although `actions/attest-build-provenance@v2` generates provenance in `runtime_build_and_test.yml`, no downstream workflow (e.g., `runtime_release_from_ci.yml`) verifies that provenance matches the expected source repository and commit before deployment.",
+        "action_required": "In the release workflow, add a provenance verification step (e.g., `uses: slsa-framework/slsa-verifier/generic@v2` or `run: cosign verify-attestation --type=slsaprovenance --certificate-identity-regexp=... --certificate-oidc-issuer-regexp=... <artifact>`)."
+    },
+    {
+        "id": "SEC-23",
+        "control": "Script Injection via Untrusted Context Variables",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Multiple workflows interpolate user-controllable GitHub context values directly into inline `run:` shell commands: `compiler_discord_notify.yml`, `devtools_discord_notify.yml`, `runtime_discord_notify.yml`, and `shared_label_core_team_prs.yml` all contain `run: echo ${{ github.event.pull_request.author_association }}`. The `author_association` field is user-controllable via the PR author's relationship to the repo.",
+        "action_required": "Pass the value via an `env:` block instead of inline interpolation: `env: AUTHOR_ASSOCIATION: ${{ github.event.pull_request.author_association }}` then `run: echo $AUTHOR_ASSOCIATION`."
+    }
+]

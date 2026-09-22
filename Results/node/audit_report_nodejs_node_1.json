@@ -1,0 +1,106 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No provided workflow invokes Gitleaks, TruffleHog, detect-secrets, ggshield/GitGuardian, or another dedicated secret-scanning tool. The AgentScan action is not a source-code secret scanner.",
+        "action_required": "Add a dedicated source secret-scanning step to a relevant workflow."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning (CVE Checks)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No provided workflow runs a dependency vulnerability scanner. npm install and npx executions do not constitute CVE scanning.",
+        "action_required": "Add a dependency CVE scanner such as npm audit, pip-audit, Trivy, Grype, Snyk, or Dependency-Check before build or deploy."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No provided workflow invokes Syft, cdxgen, or an equivalent source-level SBOM generator.",
+        "action_required": "Generate a source-level CycloneDX or SPDX SBOM from package manifests and lockfiles."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No source SBOM signing step using cosign, in-toto, or an equivalent attestation is present in any provided workflow.",
+        "action_required": "Cryptographically sign the source-level SBOM."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No provided workflow generates an artifact-level CycloneDX or SPDX SBOM, such as by running Syft against the built Node.js binary or tarball.",
+        "action_required": "Generate a separate SBOM for built artifacts or container images."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No artifact SBOM signing command or attestation is present in any provided workflow.",
+        "action_required": "Sign the build artifact SBOM using cosign attach-sbom and cosign sign or an equivalent process."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No provided workflow scans built tarballs, binaries, or images with Trivy, Grype, Clair, npm audit, pip-audit, or another appropriate artifact scanner.",
+        "action_required": "Scan final build artifacts or container images for known vulnerabilities before publishing or deployment."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No provided workflow signs built artifacts or container images with cosign, GPG, npm provenance, or another cryptographic signing mechanism.",
+        "action_required": "Cryptographically sign the produced artifact using Cosign, GPG, or platform-native provenance signing."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No provided workflow uses actions/attest-build-provenance, cosign attest, in-toto attestations, or another build-provenance generator.",
+        "action_required": "Generate signed build provenance describing the source commit and build environment."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No provided workflow scans the produced tarball, binary, or other build output for secrets.",
+        "action_required": "Scan built artifacts or container images for accidentally embedded secrets."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No provided workflow invokes libFuzzer, AFL++, go-fuzz, jsfuzz, OSS-Fuzz, or ClusterFuzzLite, and no fuzzing directory or OSS-Fuzz configuration evidence is present in the supplied repository snapshot.",
+        "action_required": "Add fuzzing coverage or an OSS-Fuzz/ClusterFuzzLite integration for parsers and untrusted input handlers."
+    },
+    {
+        "id": "SEC-19",
+        "control": "Least Privilege Permissions (Token Scoping)",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "create-release-proposal.yml grants contents: write and pull-requests: write at the workflow level. These write scopes are not declared at the job level.",
+        "action_required": "Move required write permissions from the workflow level to the specific job level and keep the top-level default read-only."
+    },
+    {
+        "id": "SEC-23",
+        "control": "Script Injection via Untrusted Context Variables",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "build-shared.yml directly interpolates inputs.extra-nix-flags and inputs.pkcs11-store-test in a run command. benchmark.yml directly interpolates inputs.post-comment and 'body.txt' in a run command. These values are caller/user-controlled and are expanded into shell syntax.",
+        "action_required": "Pass caller-controlled values through env and reference them as quoted shell variables instead of interpolating them directly into run commands."
+    }
+]

@@ -1,0 +1,138 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "None of the supplied workflows invokes a dedicated secret-scanning tool.",
+        "action_required": "Add a dedicated source-code secret scanner such as Gitleaks, TruffleHog, detect-secrets, or ggshield."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The workflows run Cargo builds and tests but no SAST scanner.",
+        "action_required": "Add a Rust-appropriate SAST scanner such as CodeQL, Semgrep, or SonarQube."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow scans Cargo dependencies against a known-vulnerability database.",
+        "action_required": "Add dependency CVE scanning, such as cargo-audit, Trivy, Grype, Snyk, or an equivalent scanner."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No source-level SBOM generator is invoked.",
+        "action_required": "Generate a CycloneDX or SPDX SBOM from the Cargo manifests using Syft, cdxgen, or an equivalent tool."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No source SBOM signing command or attestation is present.",
+        "action_required": "Cryptographically sign the generated source-level SBOM with Cosign or an in-toto mechanism."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No artifact- or image-targeted SBOM generation is performed.",
+        "action_required": "Generate a separate CycloneDX or SPDX SBOM for the built compiler artifacts or container images."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build artifact SBOM signing operation exists.",
+        "action_required": "Attach and cryptographically sign the build artifact SBOM, for example with Cosign."
+    },
+    {
+        "id": "SEC-11",
+        "control": "Pinned Build Images",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "ghcr.yml uses the mutable channel tag moby/buildkit:buildx-stable-1 rather than a digest or concrete version tag.",
+        "action_required": "Replace mutable container image channel tags with immutable digests or concrete version tags."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Neither the CI artifact publication nor GHCR mirroring workflow scans its final output for vulnerabilities.",
+        "action_required": "Scan final artifacts or images with Trivy, Grype, Clair, or an appropriate filesystem artifact scanner before publication."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No Cosign, Sigstore, GPG, or platform-native artifact signing is performed, and no immutable test-sign-deploy artifact chain exists.",
+        "action_required": "Sign each produced artifact after testing and reuse that exact signed artifact through publication or deployment."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow generates signed build provenance metadata.",
+        "action_required": "Generate signed SLSA or in-toto build provenance using actions/attest-build-provenance, Cosign, or an equivalent mechanism."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No artifact- or image-targeted secret scan is present.",
+        "action_required": "Run a secret scanner against the built artifact or image rather than only against repository source."
+    },
+    {
+        "id": "SEC-16",
+        "control": "Infrastructure as Code Misconfiguration Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Docker-based CI infrastructure is used, but no IaC or Dockerfile security scanner is invoked.",
+        "action_required": "Scan Docker and other infrastructure definitions with Hadolint, Checkov, tfsec, KICS, or an equivalent tool."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No fuzz target, fuzz configuration, or workflow step invoking a fuzzing binary is present.",
+        "action_required": "Integrate a fuzzing target and invoke a fuzzing binary or OSS-Fuzz/ClusterFuzzLite workflow."
+    },
+    {
+        "id": "SEC-19",
+        "control": "Least Privilege Permissions",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "ci.yml grants packages: write at top level, giving it to jobs that do not declare a need for package publication.",
+        "action_required": "Set top-level token permissions to read-only and grant packages: write only to jobs that require it."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No cosign verify or equivalent signature verification occurs before artifact or image publication.",
+        "action_required": "Verify the previously created artifact signature against a trusted public key before S3 or registry publication."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow verifies a build provenance attestation against an expected repository and commit.",
+        "action_required": "Verify build provenance against the expected repository and source commit before publication or deployment."
+    }
+]

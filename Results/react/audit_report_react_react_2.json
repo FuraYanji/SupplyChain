@@ -1,0 +1,138 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning: The pipeline must scan source code for secrets using a dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, etc.).",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "None of the workflow files (compiler_*.yml, runtime_*.yml, devtools_*.yml, shared_*.yml) invoke a secret scanning tool like Gitleaks, TruffleHog, or similar. No `uses: actions/secret-scanner` or equivalent is present.",
+        "action_required": "Add a secret scanning step using a tool like Gitleaks or TruffleHog in the CI/CD pipelines."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST): The pipeline must run a SAST scanner (CodeQL, Semgrep, SonarQube, Bandit) on source code.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SAST scanner is invoked in any workflow. The compiler workflows only run linters (eslint, prettier) but not static analysis.",
+        "action_required": "Integrate a SAST tool (e.g., CodeQL, Semgrep) into the build pipeline to scan source code for vulnerabilities."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning: The pipeline must scan third-party dependencies and libraries against known CVEs.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No dependency scanning tool (Trivy, Grype, npm audit, etc.) is used in any workflow.",
+        "action_required": "Add a dependency vulnerability scanner to analyze `package.json`, `yarn.lock`, etc., and fail on high-severity CVEs."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation: The pipeline must generate an SBOM (CycloneDX or SPDX) from package manifests.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No SBOM generation step is present in any workflow.",
+        "action_required": "Implement SBOM generation using tools like Syft, cdxgen, or CycloneDX in the build pipeline."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing: The pipeline must cryptographically sign the source-level SBOM.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No signing step for the source-level SBOM exists.",
+        "action_required": "Use a signing tool (e.g., cosign, in-toto) to sign the generated SBOM."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation: The pipeline must generate an SBOM for the built artifact (container image or binary).",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build artifact SBOM generation is performed.",
+        "action_required": "Add SBOM generation for the built artifact (e.g., using syft or cyclonedx)."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing: The pipeline must sign the build artifact SBOM.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No signing of the build artifact SBOM is implemented.",
+        "action_required": "Sign the build artifact SBOM using a cryptographic signature."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning: The pipeline must scan the final build output for known vulnerabilities.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No vulnerability scanning of the final build output is present.",
+        "action_required": "Integrate a container/image vulnerability scanner (e.g., Trivy, Grype) to scan the built artifact."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing: The pipeline must cryptographically sign the produced artifact.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No artifact signing step exists.",
+        "action_required": "Add artifact signing using a tool like cosign or in-toto."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation: The pipeline must generate signed build provenance metadata.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build provenance generation is implemented.",
+        "action_required": "Generate signed build provenance metadata (e.g., using slsa-attest, in-toto)."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts: The pipeline must scan the built artifact for secrets.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No secret scanning of built artifacts is performed.",
+        "action_required": "Add secret scanning to the build artifact analysis step."
+    },
+    {
+        "id": "SEC-16",
+        "control": "Infrastructure as Code (IaC) Misconfiguration Scanning: The pipeline must scan IaC files for misconfigurations.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No IaC scanning (Checkov, tfsec, KICS) is present.",
+        "action_required": "Add IaC scanning to validate Terraform, Kubernetes, and other IaC definitions."
+    },
+    {
+        "id": "SEC-17",
+        "control": "Dynamic Application Security Testing (DAST): The pipeline must attack-test a running instance.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No DAST tool (OWASP ZAP, Burp Suite) is integrated.",
+        "action_required": "Add DAST scanning to test running applications for vulnerabilities."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing: The pipeline must feed malformed input to parsing functions.",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No fuzz testing step is present.",
+        "action_required": "Add fuzz testing (libFuzzer, AFL++) to test parsing logic."
+    },
+    {
+        "id": "SEC-19",
+        "control": "Least Privilege Permissions: Top-level permissions should be minimal (read-only) with write access scoped.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The workflow files have empty `permissions: {}` blocks, meaning no explicit permission restrictions are enforced.",
+        "action_required": "Explicitly define minimal permissions for each workflow, restricting write access to specific jobs only."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification: The pipeline must verify artifact signatures before deployment.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No verification of artifact signatures occurs in any workflow.",
+        "action_required": "Add a step to verify artifact signatures (e.g., using cosign verify) before deployment."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification: The pipeline must verify build provenance attestation.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No verification of build provenance is implemented.",
+        "action_required": "Add a step to verify build provenance (e.g., using slsa-attest or in-toto)."
+    }
+]

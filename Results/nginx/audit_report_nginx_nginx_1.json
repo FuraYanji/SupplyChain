@@ -1,0 +1,114 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian) is invoked via `uses:` or `run:` in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No SAST scanner appropriate for the application language (e.g., CodeQL, Semgrep, SonarQube, Bandit) is invoked in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning (CVE Checks)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No dependency vulnerability scanning tool (e.g., Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, or OWASP Dependency-Check) is invoked in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No SBOM generation tool (e.g., Syft, cdxgen) is invoked to generate a CycloneDX or SPDX SBOM covering source-level dependencies in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No cryptographic signing of the source-level SBOM (e.g., via `cosign sign` or in-toto attestation) is performed in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No tool (e.g., Syft targeting the built image/artifact) is invoked to generate a separate SBOM for the build artifact in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No cryptographic signing of the build artifact SBOM (e.g., `cosign attach-sbom` combined with `cosign sign`) is performed in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No container-aware scanner (e.g., Trivy, Grype, Clair) or appropriate dependency/artifact scanner is invoked to scan the final build output before publishing or deployment in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No cryptographic signing of the produced artifact (e.g., via Cosign/Sigstore, GPG, or npm provenance) is performed in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No signed build provenance metadata (e.g., SLSA provenance via `actions/attest-build-provenance`, in-toto attestations, or `cosign attest`) is generated in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step is present to scan the built artifact or container image itself for accidentally embedded secrets in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No fuzzing tool (e.g., libFuzzer, AFL++, go-fuzz, jsfuzz, or OSS-Fuzz/ClusterFuzzLite integration) is invoked in any of the provided workflow files, and no `fuzz/` or `test/fuzzers/` directory is referenced.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No step is present to verify the artifact's signature (e.g., `cosign verify`) against a trusted public key before deploying to any live environment in any of the provided workflow files.",
+        "action_required": "MISSING"
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step is present to verify the artifact's build provenance attestation matches the expected source repository and commit before deploying to any live environment in any of the provided workflow files.",
+        "action_required": "MISSING"
+    }
+]

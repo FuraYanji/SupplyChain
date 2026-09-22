@@ -1,0 +1,130 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret Scanning: The pipeline must include a workflow step that runs a dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) against the source code.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The ci.yml workflow uses only actions/checkout, citool, and various utility scripts. No secret scanning tool (Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) is invoked with an actual `uses:` or `run:` command. The post-merge.yml and ghcr.yml also lack secret scanning.",
+        "action_required": "Add a secret scanning step (e.g., Gitleaks or TruffleHog) using an actual `uses:` or `run:` action in the CI workflow."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static Application Security Testing (SAST): The pipeline must run a SAST scanner appropriate for the application language to identify security vulnerabilities in source code.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The ci.yml workflow performs build and test operations but does not include any SAST scanning step. No CodeQL, Semgrep, SonarQube, or Bandit scans are present in the workflow.",
+        "action_required": "Integrate a SAST scanner (e.g., CodeQL, Semgrep, Bandit) into the CI pipeline to scan source code for vulnerabilities."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency Vulnerability Scanning (CVE Checks): The pipeline must scan third-party dependencies and libraries against known CVEs before building or deploying the application.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The ci.yml workflow builds the citool tool but does not perform any dependency vulnerability scanning. No Trivy, Grype, npm audit, pip-audit, or similar tools are invoked.",
+        "action_required": "Add a dependency vulnerability scanning step using a tool like Trivy, Grype, npm audit, or Snyk to scan package manifests (package.json, go.mod, requirements.txt, etc.)."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-Level SBOM Generation: The pipeline must generate an SBOM (CycloneDX or SPDX format) covering the project's source-level dependencies.",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "The ci.yml workflow does not generate any SBOM from source-level dependencies. There is no step calling an SBOM generator (Syft, cdxgen, etc.) with `uses:` or `run:`.",
+        "action_required": "Implement a step that generates a source-level SBOM (e.g., using Syft or cdxgen) from the project's package manifests and saves it as CycloneDX or SPDX format."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source SBOM Signing: The pipeline must cryptographically sign the source-level SBOM.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No signing step exists for the source-level SBOM. The workflow does not invoke cosign sign or similar signing mechanisms.",
+        "action_required": "After generating the source-level SBOM, sign it using a cryptographic signer (e.g., cosign sign) to produce a signed SBOM."
+    },
+    {
+        "id": "SEC-06",
+        "control": "Build Artifact SBOM Generation: The pipeline must generate a separate SBOM covering the produced build artifact or container image.",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "The ci.yml builds the citool tool but does not generate an SBOM for the resulting artifact. The ghcr.yml mirrors Docker images but does not scan them for SBOM.",
+        "action_required": "Add a step to generate an SBOM (CycloneDX or SPDX) for the built artifact/container image using a tool like Syft."
+    },
+    {
+        "id": "SEC-07",
+        "control": "Build Artifact SBOM Signing: The pipeline must cryptographically sign the build artifact SBOM.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No signing of the build artifact SBOM is performed. The workflow lacks a step using cosign attach-sbom or similar.",
+        "action_required": "Sign the generated build artifact SBOM using cosign attach-sbom combined with cosign sign."
+    },
+    {
+        "id": "SEC-12",
+        "control": "Artifact & Container Image Vulnerability Scanning: The pipeline must scan the final build output for known vulnerabilities before publishing or deployment.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The ci.yml builds the citool tool but does not scan it for vulnerabilities. The ghcr.yml mirrors Docker images without scanning them for CVEs.",
+        "action_required": "Add a container-aware vulnerability scanner (Trivy, Grype, or Clair) to scan the built artifact/container image for vulnerabilities."
+    },
+    {
+        "id": "SEC-13",
+        "control": "Artifact Signing: The pipeline must cryptographically sign the produced artifact (container image via Cosign/Sigstore, or binary/package via GPG or platform-native signing).",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No artifact signing occurs in the workflow. There is no cosign sign or similar signing step.",
+        "action_required": "Add a step to sign the produced artifact (e.g., container image with cosign sign) using a trusted signing mechanism."
+    },
+    {
+        "id": "SEC-14",
+        "control": "Build Provenance Generation: The pipeline must generate signed build provenance metadata describing how, where, and from what source commit the artifact was built.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No build provenance generation step is present. The workflow does not call actions like actions/attest-build-provenance or in-toto attestations.",
+        "action_required": "Implement a step to generate signed build provenance metadata (e.g., using SLSA provenance via actions/attest-build-provenance or in-toto)."
+    },
+    {
+        "id": "SEC-15",
+        "control": "Secret Scanning of Build Artifacts: The pipeline must scan the built artifact or container image itself for accidentally embedded secrets.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "There is no step that scans the built artifact/container image for secrets. The workflow only checks out source code and runs build tests.",
+        "action_required": "Add a step to scan the built artifact/container image for secrets using a tool like Gitleaks or TruffleHog targeting the built output."
+    },
+    {
+        "id": "SEC-16",
+        "control": "Infrastructure as Code (IaC) Misconfiguration Scanning: The pipeline must scan Terraform, Kubernetes manifests, CloudFormation, Dockerfiles, or other infrastructure definitions for security misconfigurations.",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "The repository does not appear to contain IaC files (Terraform, CloudFormation, etc.) based on the provided workflow files. Even if it did, no scanning step is implemented.",
+        "action_required": "If IaC files exist, add a scanning step using Checkov, tfsec, KICS, or Hadolint with `uses:` or `run:`."
+    },
+    {
+        "id": "SEC-17",
+        "control": "Dynamic Application Security Testing (DAST): The pipeline must attack-test a running instance of the application using a tool such as OWASP ZAP, Burp Suite, or Schemathesis.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The ci.yml workflow only uploads artifacts to GitHub and S3. There is no deployment step that starts a running instance, nor any DAST tool invocation.",
+        "action_required": "Add a step that deploys the application and runs a DAST scan (e.g., OWASP ZAP) against the live instance."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing: The pipeline must feed malformed/random input into functions that parse or process untrusted data.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No fuzzing step is present in the workflow. The ci.yml focuses on building and testing existing code, not fuzzing.",
+        "action_required": "Add a fuzz testing step (e.g., libFuzzer, AFL++) to test parsing/processing functions with malformed input."
+    },
+    {
+        "id": "SEC-20",
+        "control": "Artifact Signature Verification: Before deploying to any live environment, the pipeline must verify the artifact's signature against a trusted public key.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No verification step exists. The workflow does not call cosign verify or similar to validate artifact signatures before deployment.",
+        "action_required": "Add a step to verify the artifact's signature (e.g., cosign verify) against a trusted public key prior to deployment."
+    },
+    {
+        "id": "SEC-21",
+        "control": "Build Provenance Verification: Before deploying to any live environment, the pipeline must verify the artifact's build provenance attestation matches the expected source repository and commit.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No step verifies build provenance. The workflow does not call actions like actions/attest-build-provenance.",
+        "action_required": "Add a step to verify the build provenance attestation (e.g., using SLSA provenance or in-toto) before deployment."
+    }
+]

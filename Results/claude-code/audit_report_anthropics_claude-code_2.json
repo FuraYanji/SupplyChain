@@ -1,0 +1,66 @@
+[
+    {
+        "id": "SEC-01",
+        "control": "Secret scanning is absent across the supplied workflow ecosystem.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "No workflow invokes Gitleaks, TruffleHog, detect-secrets, ggshield/GitGuardian, or another dedicated secret-scanning tool against source code.",
+        "action_required": "Add a dedicated secret-scanning step to relevant workflow YAML files."
+    },
+    {
+        "id": "SEC-02",
+        "control": "Static application security testing is absent across the supplied workflow ecosystem.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow invokes CodeQL, Semgrep, SonarQube, Bandit, or an equivalent SAST scanner against source code.",
+        "action_required": "Add a language-appropriate SAST scanner to the CI pipeline."
+    },
+    {
+        "id": "SEC-03",
+        "control": "Dependency vulnerability scanning is absent across the supplied workflow ecosystem.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow invokes Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, OWASP Dependency-Check, or an equivalent CVE scanner.",
+        "action_required": "Add dependency vulnerability scanning before dependency installation, build, or deployment."
+    },
+    {
+        "id": "SEC-04",
+        "control": "Source-level SBOM generation is absent across the supplied workflow ecosystem.",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No workflow invokes Syft, cdxgen, or an equivalent tool to generate a CycloneDX or SPDX SBOM from source dependencies.",
+        "action_required": "Add source-level SBOM generation using an SBOM tool."
+    },
+    {
+        "id": "SEC-05",
+        "control": "Source-level SBOM signing is absent across the supplied workflow ecosystem.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "No workflow uses cosign sign or an in-toto attestation mechanism to sign a source-level SBOM.",
+        "action_required": "Add cryptographic signing for the source-level SBOM."
+    },
+    {
+        "id": "SEC-09",
+        "control": "CI/CD actions and dependencies are not fully pinned.",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Mutable action references remain, including actions/checkout@v4, anthropics/claude-code-action@v1, and actions/github-script@v7. SHA-pinned setup-bun and checkout references do not offset these mutable references.",
+        "action_required": "Pin every third-party GitHub Action to a full-length immutable commit SHA; mutable tags are only partial compliance."
+    },
+    {
+        "id": "SEC-19",
+        "control": "Workflow token permissions do not consistently follow least privilege.",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "The following workflows grant write permissions at the top level instead of declaring them at job level: issue-lifecycle-comment.yml, issue-opened-dispatch.yml, lock-closed-issues.yml, non-write-users-check.yml, remove-autoclose-label.yml, and sweep.yml.",
+        "action_required": "Move write permissions from workflow-level defaults to job-level, minimally scoped permissions."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz testing is absent from the supplied workflow ecosystem.",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No workflow invokes libFuzzer, AFL++, go-fuzz, jsfuzz, OSS-Fuzz/ClusterFuzzLite, or otherwise feeds malformed/random input into untrusted-data processing code; no fuzz directory or OSS-Fuzz configuration evidence is present.",
+        "action_required": "Add fuzz testing for code that parses or processes untrusted issue, pull-request, or event data."
+    }
+]
