@@ -3,7 +3,7 @@
     {
       "control": "Secret Scanning",
       "severity": "Critical",
-      "description": "The pipeline must include a workflow step that runs a dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) against the source code \u2014 identified by an actual `uses:` action or `run:` command invoking one of these tools, not just a step name suggesting security. Only check for evidence within the workflow YAML files provided; do not assume GitHub's native repository-level Secret Scanning setting is enabled or disabled, since that setting is not visible in workflow files."
+      "description": "The pipeline must include a workflow step that runs a dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) against the source code identified by an actual `uses:` action or `run:` command invoking one of these tools, not just a step name suggesting security. Only check for evidence within the workflow YAML files provided; do not assume GitHub's native repository-level Secret Scanning setting is enabled or disabled, since that setting is not visible in workflow files."
     },
     {
       "control": "Static Application Security Testing (SAST)",
@@ -13,7 +13,7 @@
     {
       "control": "Dependency Vulnerability Scanning (CVE Checks)",
       "severity": "High",
-      "description": "The pipeline must scan third-party dependencies and libraries against known CVEs before building or deploying the application, using a tool such as Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, or OWASP Dependency-Check \u2014 identified by an actual `uses:` action or `run:` command, not a job name alone."
+      "description": "The pipeline must scan third-party dependencies and libraries against known CVEs before building or deploying the application, using a tool such as Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, or OWASP Dependency-Check  identified by an actual `uses:` action or `run:` command, not a job name alone."
     },
     {
       "control": "Source-Level SBOM Generation",
@@ -28,7 +28,7 @@
     {
       "control": "Build Artifact SBOM Generation",
       "severity": "Medium",
-      "description": "The pipeline must generate a separate SBOM (CycloneDX or SPDX format) covering the produced build artifact or container image itself, using a tool such as Syft targeting the built image/artifact \u2014 evaluated independently of source-level SBOM generation."
+      "description": "The pipeline must generate a separate SBOM (CycloneDX or SPDX format) covering the produced build artifact or container image itself, using a tool such as Syft targeting the built image/artifact evaluated independently of source-level SBOM generation."
     },
     {
       "control": "Build Artifact SBOM Signing",
@@ -38,7 +38,7 @@
     {
       "control": "Secret Management",
       "severity": "Critical",
-      "description": "Workflow YAML files must not contain hardcoded credential values (API keys, passwords, tokens) written directly as plain text \u2014 all secret values must be referenced through the platform's secrets mechanism (e.g., `${{ secrets.* }}` in GitHub Actions) rather than embedded literally in the workflow file. This check targets the pipeline configuration files themselves, distinct from the Secret Scanning control, which targets application source code."
+      "description": "Workflow YAML files must not contain hardcoded credential values (API keys, passwords, tokens) written directly as plain text all secret values must be referenced through the platform's secrets mechanism (e.g., `${{ secrets.* }}` in GitHub Actions) rather than embedded literally in the workflow file. This check targets the pipeline configuration files themselves, distinct from the Secret Scanning control, which targets application source code."
     },
     {
       "control": "Pinned CI/CD Actions and Dependencies",
@@ -63,12 +63,12 @@
     {
       "control": "Artifact Signing",
       "severity": "Critical",
-      "description": "The pipeline must cryptographically sign the produced artifact (container image via Cosign/Sigstore, or binary/package via GPG or platform-native signing such as npm provenance). The artifact that is signed must be the same artifact instance that was tested \u2014 evidenced by the pipeline building the artifact once and reusing that same build output (via a fixed image tag/digest or uploaded build artifact) across test, sign, and later deploy steps, rather than rebuilding it again at any later stage."
+      "description": "The pipeline must cryptographically sign the produced artifact (container image via Cosign/Sigstore, or binary/package via GPG or platform-native signing such as npm provenance). The artifact that is signed must be the same artifact instance that was tested  evidenced by the pipeline building the artifact once and reusing that same build output (via a fixed image tag/digest or uploaded build artifact) across test, sign, and later deploy steps, rather than rebuilding it again at any later stage."
     },
     {
       "control": "Build Provenance Generation",
       "severity": "High",
-      "description": "The pipeline must generate signed build provenance metadata describing how, where, and from what source commit the artifact was built (e.g., SLSA provenance via `actions/attest-build-provenance`, in-toto attestations, or `cosign attest`) \u2014 distinct from Artifact Signing, which only covers artifact integrity, not build origin."
+      "description": "The pipeline must generate signed build provenance metadata describing how, where, and from what source commit the artifact was built (e.g., SLSA provenance via `actions/attest-build-provenance`, in-toto attestations, or `cosign attest`) distinct from Artifact Signing, which only covers artifact integrity, not build origin."
     },
     {
       "control": "Secret Scanning of Build Artifacts",
@@ -84,13 +84,13 @@
     {
       "control": "Dynamic Application Security Testing (DAST)",
       "severity": "High",
-      "description": "The pipeline must attack-test a running instance of the application (web UI or API) using a tool such as OWASP ZAP, Burp Suite, or Schemathesis. Evidence requires a sequence: a step that starts/deploys the application, followed by a step pointing a DAST tool at that live address \u2014 a tool reference alone without a corresponding live-target step is not sufficient. Only applicable if the project exposes an HTTP/GraphQL network surface as part of its own pipeline; not applicable to libraries, CLIs, language runtimes, or services that only consume external APIs without exposing their own.",
+      "description": "The pipeline must attack-test a running instance of the application (web UI or API) using a tool such as OWASP ZAP, Burp Suite, or Schemathesis. Evidence requires a sequence: a step that starts/deploys the application, followed by a step pointing a DAST tool at that live address a tool reference alone without a corresponding live-target step is not sufficient. Only applicable if the project exposes an HTTP/GraphQL network surface as part of its own pipeline; not applicable to libraries, CLIs, language runtimes, or services that only consume external APIs without exposing their own.",
       "applicable_only_if": "the project's own CI pipeline deploys something and exposes it over a network address during the pipeline run"
     },
     {
       "control": "Fuzz Testing",
       "severity": "Medium",
-      "description": "The pipeline must feed malformed/random input into functions that parse or process untrusted data (network input, file formats, language parsers) using a tool such as libFuzzer, AFL++, go-fuzz, jsfuzz, or OSS-Fuzz/ClusterFuzzLite integration \u2014 evidenced by a `fuzz/` or `test/fuzzers/` directory, OSS-Fuzz config files, or a workflow step invoking a fuzzing binary. Distinct from DAST: applicable regardless of whether the project exposes a network endpoint."
+      "description": "The pipeline must feed malformed/random input into functions that parse or process untrusted data (network input, file formats, language parsers) using a tool such as libFuzzer, AFL++, go-fuzz, jsfuzz, or OSS-Fuzz/ClusterFuzzLite integration evidenced by a `fuzz/` or `test/fuzzers/` directory, OSS-Fuzz config files, or a workflow step invoking a fuzzing binary. Distinct from DAST: applicable regardless of whether the project exposes a network endpoint."
     },
     {
       "control": "Least Privilege Permissions (Token Scoping)",
@@ -110,12 +110,12 @@
     {
       "control": "Dangerous Workflow Trigger + Untrusted Checkout Combination",
       "severity": "Critical",
-      "description": "No workflow may combine a privileged trigger (`pull_request_target` or `workflow_run`) with an explicit checkout of the pull request's head code (e.g., `ref: ${{ github.event.pull_request.head.sha }}`) within the same job. `pull_request_target` alone \u2014 without an explicit PR-head checkout in the same job \u2014 is a common, legitimate pattern (auto-labeling, PR comments, stale-issue bots) and must not be flagged on its own. A job gated with `if: github.event.label.name == ...` should be treated as reduced risk, not full failure."
+      "description": "No workflow may combine a privileged trigger (`pull_request_target` or `workflow_run`) with an explicit checkout of the pull request's head code (e.g., `ref: ${{ github.event.pull_request.head.sha }}`) within the same job. `pull_request_target` alone without an explicit PR-head checkout in the same job  is a common, legitimate pattern (auto-labeling, PR comments, stale-issue bots) and must not be flagged on its own. A job gated with `if: github.event.label.name == ...` should be treated as reduced risk, not full failure."
     },
     {
       "control": "Script Injection via Untrusted Context Variables",
       "severity": "High",
-      "description": "No `run:` step may directly interpolate a user-controllable GitHub context value (e.g., `github.event.pull_request.title`, `github.event.issue.body`, `github.event.comment.body`, `github.head_ref`) into an inline shell command string \u2014 including on the unprivileged `pull_request` trigger. The safe equivalent passes the same value via an `env:` block instead of inline interpolation."
+      "description": "No `run:` step may directly interpolate a user-controllable GitHub context value (e.g., `github.event.pull_request.title`, `github.event.issue.body`, `github.event.comment.body`, `github.head_ref`) into an inline shell command string  including on the unprivileged `pull_request` trigger. The safe equivalent passes the same value via an `env:` block instead of inline interpolation."
     }
   ]
 }
