@@ -4,119 +4,55 @@
         "control": "Secret Scanning",
         "severity": "CRITICAL",
         "status": "MISSING",
-        "evidence": "No workflow in the repository explicitly invokes a secret scanning tool (e.g., Gitlead, TruffleHog, DetSec, etc.) in a step. While some workflows may implicitly scan via other mechanisms, none have a dedicated secret scanning action.",
-        "action_required": "Add a workflow or step that scans source code for secrets using a dedicated secret scanning tool (e.g., Gitlead-Scanner, TruffleHog, or DetSec) in a GitHub Action."
-    },
-    {
-        "id": "SEC-02",
-        "control": "Static Application Security Testing (SAST)",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "No workflow explicitly runs a dedicated SAST tool (e.g., CodeQL, Semgrep, SonarQube, Bandit) on the source code. Existing linters (e.g., golangci-lint) are primarily linting/formatting tools, not dedicated SAST tools.",
-        "action_required": "Add a workflow step that runs a SAST tool (e.g., CodeQL, Semgrep, or SonarQube) on the source code to detect vulnerabilities and misconfigurations."
+        "evidence": "No dedicated secret scanning tool (e.g., Gitlead, TruffleHog, etc.) is invoked in any workflow. While Trivy is used for vulnerability scanning, it is not a dedicated secret scanner. The benchmark requires a secret scanning mechanism specifically designed for detecting leaked credentials, API keys, etc.",
+        "action_required": "Add a secret scanning action like `gitlead/secret-scanner` or `trufflehog` to a workflow that triggers on push to main/release branches."
     },
     {
         "id": "SEC-03",
         "control": "Dependency Vulnerability Scanning",
-        "severity": "HIGH",
+        "severity": "CRITICAL",
         "status": "MISSING",
-        "evidence": "While `images-publish.yaml` uses Trivy to scan container images (including transitive dependencies), there is no dedicated dependency scanning workflow for source code dependencies. The benchmark requires scanning third-party dependencies, which is not comprehensively addressed.",
-        "action_required": "Implement a workflow that scans source code dependencies (e.g., using Trivy, Grype, or Snyk) for vulnerabilities in the build process."
+        "evidence": "While Trivy is used in `images-publish.yaml` for vulnerability scanning, it is primarily a general-purpose vulnerability scanner. The benchmark expects a dedicated dependency scanning tool (e.g., npm audit, pip-audit, Grype, etc.) focused on third-party dependencies and their CVEs.",
+        "action_required": "Implement a dedicated dependency scanning workflow (e.g., `npm audit`, `pip-audit`, `Grype`) that scans the dependency tree during the build process."
     },
     {
         "id": "SEC-04",
-        "control": "Source SBOM Generation",
+        "control": "SBOM Generation (Source)",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "Only `images-publish.yaml` generates an SBOM for kyverno images (line 108-115). There is no generic SBOM generation for all artifacts or source dependencies.",
-        "action_required": "Add a workflow step that generates an SBOM (CycloneDX or SPDX) for the built artifacts (e.g., container images, binaries) using a tool like Syft or CycloneDX."
+        "evidence": "No SBOM (CycloneDX or SPDX) generation is implemented in any workflow. The `images-publish.yaml` does not produce an SBOM for the source dependencies.",
+        "action_required": "Add an SBOM generation step using tools like `syft`, `cyclonedx`, or `spdx` to generate an SBOM for the project's source dependencies."
     },
     {
         "id": "SEC-05",
         "control": "SBOM Signing",
-        "severity": "CRITICAL",
+        "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "There is no workflow that cryptographically signs the SBOM. The `release.yaml` workflow signs kyverno images, but this is not a general solution for all artifacts.",
-        "action_required": "Add a step that signs the SBOM (e.g., using Cosign or Sigstore) after SBOM generation to ensure integrity and authenticity."
+        "evidence": "No SBOM signing is performed. Individual components are signed with Cosign, but the main build artifact (container image) is not signed.",
+        "action_required": "Generate and sign the SBOM for the built artifact using Cosign (or similar) to ensure authenticity and integrity."
     },
     {
         "id": "SEC-06",
-        "control": "Build Artifact SBOM",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "Only `images-publish.yaml` generates an SBOM for kyverno images. There is no generic SBOM generation for all build artifacts.",
-        "action_required": "Implement a workflow that generates an SBOM for all build artifacts (e.g., container images, binaries) during the build process."
-    },
-    {
-        "id": "SEC-07",
         "control": "Build Artifact Signing",
-        "severity": "CRITICAL",
-        "status": "MISSING",
-        "evidence": "No workflow signs the build artifacts. The `release.yaml` workflow signs kyverno images, but this is not applied to all artifacts.",
-        "action_required": "Add a step that signs the build artifacts (e.g., container images, binaries) using a tool like Cosign or Sigstore."
-    },
-    {
-        "id": "SEC-08",
-        "control": "Secret Management",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "Secrets are referenced via `${{ secrets.* }}` in most workflows (e.g., `PR_UPDATER_APP_PRIVATE_KEY`, `PR_UPDATER_APP_CLIENT_ID`), which is correct. However, this is not a standalone control\u2014it depends on other controls. The benchmark requires this as a distinct control.",
-        "action_required": "Ensure all secrets are managed through GitHub Secrets (or equivalent) and never hardcoded in workflow files. This is currently implemented but needs verification across all workflows."
-    },
-    {
-        "id": "SEC-09",
-        "control": "Pinned Actions",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "Some workflows pin actions (e.g., `golangci-lint-action`, `go-import-check`), but others do not (e.g., `check-kyverno-cloud.yaml`, `release.yaml`, `images-publish.yaml`). The benchmark requires pinning third-party GitHub Actions to immutable commit SHAs for all workflows.",
-        "action_required": "Pin all third-party GitHub Actions to specific commit SHAs (e.g., `actions/checkout@v3`, `actions/workflow/failure-issue@v3.1.0`)."
-    },
-    {
-        "id": "SEC-10",
-        "control": "Least Privilege Permissions",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "Most workflows have overly permissive permissions (e.g., `contents: write`, `packages: write`, `id-token: write`). There is no consistent application of least privilege across all workflows.",
-        "action_required": "Review and tighten permissions for all workflows to use the principle of least privilege (e.g., `contents: read`, `packages: read`, `id-token: read` where possible)."
-    },
-    {
-        "id": "SEC-11",
-        "control": "Immutable Base Images",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "No workflow specifies immutable base images (e.g., `FROM alpine:3.18` instead of `FROM alpine`). This leaves the base layer vulnerable to supply chain compromises.",
-        "action_required": "Update all Dockerfile/workflow configurations to use immutable base images with explicit version pins."
-    },
-    {
-        "id": "SEC-12",
-        "control": "Container Image Scanning",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "Only `images-publish.yaml` scans container images with Trivy (line 101-104). There is no scanning for intermediate build stages or other artifact types.",
-        "action_required": "Add container image scanning (e.g., Trivy, Grype) for all build stages, not just final published images."
-    },
-    {
-        "id": "SEC-13",
-        "control": "Artifact Signing",
-        "severity": "CRITICAL",
-        "status": "MISSING",
-        "evidence": "Signing occurs only in `release.yaml` for kyverno images. There is no general artifact signing workflow.",
-        "action_required": "Implement a workflow that signs all build artifacts (e.g., container images, binaries) using Cosign or Sigstore."
+        "evidence": "Only individual components (kyverno, kyverno-policies, etc.) are signed with Cosign. The main build artifact (the container image being published to GHCR) is not signed.",
+        "action_required": "Add Cosign signing for the main build artifact (the container image) after successful build."
     },
     {
         "id": "SEC-14",
-        "control": "Build Provenance",
+        "control": "Build Artifact Provenance",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "Only `release.yaml` generates provenance metadata using `slaa-github-generator`. There is no generic provenance collection for all artifacts.",
-        "action_required": "Add a workflow step that generates build provenance (e.g., SLSA attestations) for all artifacts."
+        "evidence": "No signed build provenance metadata is generated. The benchmark requires verifying the artifact's provenance (e.g., using `kyverno/verify-provenance` or similar).",
+        "action_required": "Implement build provenance verification using tools like `kyverno/verify-provenance` or `cosign verify` to confirm the artifact's origin and integrity."
     },
     {
         "id": "SEC-15",
-        "control": "Source Code Secret Scanning",
-        "severity": "HIGH",
+        "control": "Secret Scanning of Build Artifacts",
+        "severity": "CRITICAL",
         "status": "MISSING",
-        "evidence": "No dedicated secret scanning workflow for source code (e.g., Gitlead, TruffleHog, DetSec). While FOSSA (`scan-fossa.yaml`) is used for policy enforcement, it is not a primary secret scanning tool.",
-        "action_required": "Add a workflow that scans source code for secrets using a dedicated secret scanning tool."
+        "evidence": "While Trivy scans the entire repository, it is not specifically configured to scan built artifacts for secrets post-build. The benchmark requires scanning the built artifact (not just source code) for leaked credentials.",
+        "action_required": "Add a dedicated secret scanning step that scans the built artifact (e.g., container image) for secrets after the build completes."
     }
 ]

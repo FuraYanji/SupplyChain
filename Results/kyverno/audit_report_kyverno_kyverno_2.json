@@ -4,103 +4,111 @@
         "control": "Secret Scanning",
         "severity": "CRITICAL",
         "status": "MISSING",
-        "evidence": "The workflow contains no dedicated secret-scanning tool (e.g., Gitleaks, TruffleHog, detect-secrets, GitGuardian/ggshield) invoked via `uses:` or `run:`. Only a standard `actions/checkout` step is present.",
-        "action_required": "Add a secret scanning step (e.g., `uses: gitleaks/gitleak-scan-action@v6.0.1` or similar) to scan source code for secrets."
-    },
-    {
-        "id": "SEC-02",
-        "control": "Static Application Security Testing (SAST)",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "No SAST scanner (e.g., CodeQL, Semgrep, SonarQube, Bandit) is invoked in the workflow. The pipeline only performs milestone assignment and PR updates.",
-        "action_required": "Introduce a SAST scanning step using an appropriate tool for the application language (e.g., CodeQL, Semgrep) with `uses:` or `run:`."
-    },
-    {
-        "id": "SEC-03",
-        "control": "Dependency Vulnerability Scanning",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "There is no dependency vulnerability scanner (e.g., Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, OWASP Dependency-Check) invoked in the workflow.",
-        "action_required": "Add a dependency scanning step to scan third-party library dependencies against known CVEs."
+        "evidence": "No dedicated secret-scanning tool (Gitleaks, TruffleHog, detect-secrets, ggshield) is invoked in any workflow. Semgrep and SonarCloud are used for SAST but are not dedicated secret scanners.",
+        "action_required": "Add a workflow step using a dedicated secret scanning action (e.g., gitleaks/gitleaks-action, trufflesecurity/trufflehog, or GitGuardian/ggshield) against source code."
     },
     {
         "id": "SEC-04",
         "control": "Source-Level SBOM Generation",
-        "severity": "HIGH",
+        "severity": "MEDIUM",
         "status": "MISSING",
-        "evidence": "No step generates a source-level SBOM (CycloneDX or SPDX format) from package manifests (package.json, go.mod, requirements.txt, etc.).",
-        "action_required": "Implement an SBOM generation step using a tool like Syft, cdxgen, or similar, invoked via `uses:` or `run:`."
+        "evidence": "Workflows generate SBOMs for container images (build artifacts) via ko/cosign in the publish actions, but no step generates an SBOM from source-level dependencies (go.mod/go.sum) using Syft, cdxgen, or equivalent.",
+        "action_required": "Add a step to generate a source-level SBOM (CycloneDX/SPDX) from package manifests before build, independent of the container image SBOM."
     },
     {
         "id": "SEC-05",
         "control": "Source SBOM Signing",
-        "severity": "MEDIUM",
+        "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "The pipeline does not cryptographically sign the source-level SBOM after generation.",
-        "action_required": "Add a signing step (e.g., using cosign or in-toto) to sign the generated SBOM."
+        "evidence": "Since no source-level SBOM is generated (SEC-04), there is no signing of such an SBOM via cosign or in-toto.",
+        "action_required": "After implementing source-level SBOM generation, add a step to cryptographically sign it (e.g., cosign sign-blob)."
     },
     {
-        "id": "SEC-06",
-        "control": "Build Artifact SBOM Generation",
-        "severity": "MEDIUM",
+        "id": "SEC-09",
+        "control": "Pinned CI/CD Actions and Dependencies",
+        "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "No step generates an SBOM for the built artifact or container image.",
-        "action_required": "Add a step to generate an artifact-level SBOM (CycloneDX or SPDX) using a tool like Syft targeting the built image/artifact."
+        "evidence": "The reusable workflow `slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml` is referenced by mutable tag `@v2.1.0` in images-publish.yaml and release.yaml, not by an immutable commit SHA.",
+        "action_required": "Pin the SLSA generator workflow to a full-length commit SHA (e.g., `@<40-char-sha>`)."
     },
     {
-        "id": "SEC-07",
-        "control": "Build Artifact SBOM Signing",
-        "severity": "MEDIUM",
+        "id": "SEC-11",
+        "control": "Pinned Build Images",
+        "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "The pipeline does not sign the build artifact SBOM.",
-        "action_required": "Add a signing step to cryptographically sign the artifact SBOM."
+        "evidence": "Workflows check-ah-lint.yaml and helm-release.yaml use `container: image: artifacthub/ah` without a tag or digest, defaulting to the mutable `latest` tag.",
+        "action_required": "Pin the artifacthub/ah image to a specific version tag or, preferably, an immutable digest (e.g., `artifacthub/ah@v1.2.3` or `artifacthub/ah@sha256:...`)."
     },
     {
         "id": "SEC-12",
         "control": "Artifact & Container Image Vulnerability Scanning",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "The pipeline does not scan the final build output (container image or binary) for known vulnerabilities.",
-        "action_required": "Add a container-aware vulnerability scanner (Trivy, Grype, Clair) to scan the built image/artifact."
-    },
-    {
-        "id": "SEC-13",
-        "control": "Artifact Signing",
-        "severity": "CRITICAL",
-        "status": "MISSING",
-        "evidence": "The pipeline does not cryptographically sign the produced artifact (container image, binary, package) before deployment.",
-        "action_required": "Add an artifact signing step (e.g., `cosign sign` or in-toto attestation) for the deployed artifact."
-    },
-    {
-        "id": "SEC-14",
-        "control": "Build Provenance Generation",
-        "severity": "HIGH",
-        "status": "MISSING",
-        "evidence": "The pipeline does not generate signed build provenance metadata (SLSA, in-toto, cosign attest) describing how and from what source the artifact was built.",
-        "action_required": "Add a provenance generation step to create signed build provenance metadata."
+        "evidence": "Trivy scans in images-publish.yaml and release.yaml use `scan-type: fs` on the source repository (`.`), not on the built container images. scan-trivy.yaml scans the binary (`rootfs` on `./cmd/kyverno/kyverno`), not the container image. No step scans the final container image (e.g., `trivy image ghcr.io/.../kyverno:tag`) before publishing.",
+        "action_required": "Add a container-image scan step (Trivy, Grype, or Clair) targeting the built image digest/tag after build and before publish/sign."
     },
     {
         "id": "SEC-15",
         "control": "Secret Scanning of Build Artifacts",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "The pipeline does not scan the built artifact or container image for accidentally embedded secrets after the fact.",
-        "action_required": "Add a step to scan the final build output (image/binary) for secrets using a secret scanner."
+        "evidence": "No workflow scans the built container images or binaries for embedded secrets. Trivy scans are configured for vulnerability (CVE) detection only.",
+        "action_required": "Add a secret scan step targeting the built artifacts/images (e.g., Trivy with `--scanners secret`, ggshield, or TruffleHog) in the publish/release pipelines."
+    },
+    {
+        "id": "SEC-16",
+        "control": "Infrastructure as Code (IaC) Misconfiguration Scanning",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "The repository contains Helm charts (charts/) and Dockerfiles (implied by ko builds), but no workflow runs Checkov, tfsec, KICS, Hadolint, or similar IaC security scanners. Only `ct lint` and `ah lint` are used, which are not security misconfiguration scanners.",
+        "action_required": "Add an IaC scanning step (e.g., bridgecrewio/checkov-action, aquasecurity/tfsec, or hadolint/hadolint-action) for Kubernetes manifests, Helm charts, and Dockerfiles."
+    },
+    {
+        "id": "SEC-17",
+        "control": "Dynamic Application Security Testing (DAST)",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Kyverno exposes admission webhooks (HTTP/HTTPS), but no workflow deploys a live instance and attacks it with a DAST tool (OWASP ZAP, Burp Suite, Schemathesis). Conformance tests are integration tests, not DAST.",
+        "action_required": "If DAST is in scope, add a workflow that deploys the application and runs a DAST tool against the live endpoint."
+    },
+    {
+        "id": "SEC-18",
+        "control": "Fuzz Testing",
+        "severity": "MEDIUM",
+        "status": "MISSING",
+        "evidence": "No fuzzing workflow, fuzz target directory (fuzz/, test/fuzzers/), OSS-Fuzz config, or fuzzing tool invocation (libFuzzer, AFL++, go-fuzz, jsfuzz, ClusterFuzzLite) is present.",
+        "action_required": "Integrate fuzz testing for parsers and untrusted-input handlers (e.g., go-fuzz for Go code, OSS-Fuzz integration)."
+    },
+    {
+        "id": "SEC-19",
+        "control": "Least Privilege Permissions (Token Scoping)",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "Multiple workflows violate least privilege: check-framework.yaml lacks a top-level `permissions:` block (defaults to write-all); pr-branch-updater.yml, pr-labelling.yaml, and sync-label-colors.yaml declare write permissions at the top level instead of scoping to jobs.",
+        "action_required": "Set top-level `permissions: {}` (or `contents: read`) in all workflows and declare required write permissions explicitly at the job level only."
     },
     {
         "id": "SEC-20",
         "control": "Artifact Signature Verification",
         "severity": "CRITICAL",
         "status": "MISSING",
-        "evidence": "The pipeline does not verify the artifact's signature (e.g., `cosign verify`) against a trusted public key before deployment to staging/production environments.",
-        "action_required": "Add a verification step to re-verify the artifact's signature prior to deployment."
+        "evidence": "No deployment workflow is present in the provided files, but the release/publish workflows sign artifacts without a subsequent verification step before any hypothetical deployment to staging/production.",
+        "action_required": "Add a verification step (e.g., `cosign verify`) in any deployment pipeline before promoting artifacts to live environments."
     },
     {
         "id": "SEC-21",
         "control": "Build Provenance Verification",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "The pipeline does not verify the artifact's build provenance attestation matches the expected source repository and commit before deployment.",
-        "action_required": "Add a step to verify the build provenance attestation (e.g., via `cosign attest` or in-toto verification)."
+        "evidence": "SLSA provenance is generated (SEC-14), but no workflow verifies the provenance attestation against the expected source repository and commit before deployment.",
+        "action_required": "Add a provenance verification step (e.g., `slsa-verifier` or `cosign verify-attestation`) in the deployment pipeline."
+    },
+    {
+        "id": "SEC-23",
+        "control": "Script Injection via Untrusted Context Variables",
+        "severity": "HIGH",
+        "status": "MISSING",
+        "evidence": "Multiple workflows directly interpolate GitHub context variables into inline `run:` shell commands instead of passing them via `env:` blocks. Examples: release.yaml interpolates `${{ github.repository_owner }}`, `${{ github.ref_name }}`, `${{ github.repository }}`, `${{ github.workflow }}`, `${{ github.sha }}` in flux/cosign commands; helm-release.yaml interpolates similar contexts in helm/cosign commands.",
+        "action_required": "Refactor all `run:` steps to pass dynamic values through `env:` blocks (e.g., `env: REPO_OWNER: ${{ github.repository_owner }}`) and reference them as `$REPO_OWNER` in the script."
     }
 ]

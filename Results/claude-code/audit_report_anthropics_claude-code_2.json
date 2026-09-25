@@ -1,66 +1,66 @@
 [
     {
         "id": "SEC-01",
-        "control": "Secret scanning is absent across the supplied workflow ecosystem.",
+        "control": "Secret Scanning",
         "severity": "CRITICAL",
         "status": "MISSING",
-        "evidence": "No workflow invokes Gitleaks, TruffleHog, detect-secrets, ggshield/GitGuardian, or another dedicated secret-scanning tool against source code.",
-        "action_required": "Add a dedicated secret-scanning step to relevant workflow YAML files."
+        "evidence": "No workflow runs a dedicated secret-scanning tool (Gitleaks, TruffleHog, detect-secrets, ggshield) against source code via uses: or run:.",
+        "action_required": "Add a workflow step invoking a secret scanner (e.g., gitleaks/gitleaks-action, trufflesecurity/trufflehog, or GitGuardian/ggshield) on push/PR."
     },
     {
         "id": "SEC-02",
-        "control": "Static application security testing is absent across the supplied workflow ecosystem.",
+        "control": "Static Application Security Testing (SAST)",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "No workflow invokes CodeQL, Semgrep, SonarQube, Bandit, or an equivalent SAST scanner against source code.",
-        "action_required": "Add a language-appropriate SAST scanner to the CI pipeline."
+        "evidence": "No SAST scanner (CodeQL, Semgrep, SonarQube, Bandit) is executed in any workflow for the TypeScript/Bun codebase.",
+        "action_required": "Add a SAST workflow (e.g., github/codeql-action or returntocorp/semgrep) triggered on push/PR."
     },
     {
         "id": "SEC-03",
-        "control": "Dependency vulnerability scanning is absent across the supplied workflow ecosystem.",
+        "control": "Dependency Vulnerability Scanning (CVE Checks)",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "No workflow invokes Trivy, Grype, npm audit, pip-audit, govulncheck, cargo-audit, Snyk, OWASP Dependency-Check, or an equivalent CVE scanner.",
-        "action_required": "Add dependency vulnerability scanning before dependency installation, build, or deployment."
+        "evidence": "No dependency vulnerability scanner (npm audit, Trivy, Grype, Snyk, OWASP Dependency-Check) runs in any workflow.",
+        "action_required": "Add a dependency scanning step (e.g., npm audit, aquasecurity/trivy-action, or snyk/actions) in CI."
     },
     {
         "id": "SEC-04",
-        "control": "Source-level SBOM generation is absent across the supplied workflow ecosystem.",
+        "control": "Source-Level SBOM Generation",
         "severity": "MEDIUM",
         "status": "MISSING",
-        "evidence": "No workflow invokes Syft, cdxgen, or an equivalent tool to generate a CycloneDX or SPDX SBOM from source dependencies.",
-        "action_required": "Add source-level SBOM generation using an SBOM tool."
+        "evidence": "No workflow generates an SBOM (CycloneDX/SPDX) from package manifests (package.json, bun.lockb) using Syft, cdxgen, or equivalent.",
+        "action_required": "Add an SBOM generation step (e.g., anchore/sbom-action or cyclonedx/github-action) in CI."
     },
     {
         "id": "SEC-05",
-        "control": "Source-level SBOM signing is absent across the supplied workflow ecosystem.",
+        "control": "Source SBOM Signing",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "No workflow uses cosign sign or an in-toto attestation mechanism to sign a source-level SBOM.",
-        "action_required": "Add cryptographic signing for the source-level SBOM."
+        "evidence": "No source-level SBOM is generated, therefore no signing (cosign sign or in-toto attestation) occurs.",
+        "action_required": "After implementing SEC-04, add a cosign sign step for the generated SBOM."
     },
     {
         "id": "SEC-09",
-        "control": "CI/CD actions and dependencies are not fully pinned.",
+        "control": "Pinned CI/CD Actions and Dependencies",
         "severity": "HIGH",
         "status": "MISSING",
-        "evidence": "Mutable action references remain, including actions/checkout@v4, anthropics/claude-code-action@v1, and actions/github-script@v7. SHA-pinned setup-bun and checkout references do not offset these mutable references.",
-        "action_required": "Pin every third-party GitHub Action to a full-length immutable commit SHA; mutable tags are only partial compliance."
-    },
-    {
-        "id": "SEC-19",
-        "control": "Workflow token permissions do not consistently follow least privilege.",
-        "severity": "CRITICAL",
-        "status": "MISSING",
-        "evidence": "The following workflows grant write permissions at the top level instead of declaring them at job level: issue-lifecycle-comment.yml, issue-opened-dispatch.yml, lock-closed-issues.yml, non-write-users-check.yml, remove-autoclose-label.yml, and sweep.yml.",
-        "action_required": "Move write permissions from workflow-level defaults to job-level, minimally scoped permissions."
+        "evidence": "Multiple workflows reference actions by mutable tags: actions/checkout@v4 (auto-close-duplicates, backfill-duplicate-comments, issue-lifecycle-comment, sweep), anthropics/claude-code-action@v1 (claude-dedupe-issues, claude-issue-triage, claude), actions/github-script@v7 (lock-closed-issues, remove-autoclose-label). Only claude.yml and mod-tests.yml pin actions/checkout to a SHA.",
+        "action_required": "Pin all third-party actions to full-length commit SHAs (e.g., actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683)."
     },
     {
         "id": "SEC-18",
-        "control": "Fuzz testing is absent from the supplied workflow ecosystem.",
+        "control": "Fuzz Testing",
         "severity": "MEDIUM",
         "status": "MISSING",
-        "evidence": "No workflow invokes libFuzzer, AFL++, go-fuzz, jsfuzz, OSS-Fuzz/ClusterFuzzLite, or otherwise feeds malformed/random input into untrusted-data processing code; no fuzz directory or OSS-Fuzz configuration evidence is present.",
-        "action_required": "Add fuzz testing for code that parses or processes untrusted issue, pull-request, or event data."
+        "evidence": "No fuzz testing workflow, fuzz/ directory, OSS-Fuzz config, or fuzzing tool invocation (libFuzzer, AFL++, go-fuzz, jsfuzz, ClusterFuzzLite) found.",
+        "action_required": "Add fuzz testing for parsers/handlers of untrusted input (e.g., via OSS-Fuzz integration or a dedicated fuzz workflow)."
+    },
+    {
+        "id": "SEC-19",
+        "control": "Least Privilege Permissions (Token Scoping)",
+        "severity": "CRITICAL",
+        "status": "MISSING",
+        "evidence": "Multiple workflows declare write permissions at the top level instead of job level: issue-lifecycle-comment.yml (issues: write), issue-opened-dispatch.yml (actions: write), lock-closed-issues.yml (issues: write), non-write-users-check.yml (pull-requests: write), remove-autoclose-label.yml (issues: write), sweep.yml (issues: write). Benchmark requires top-level permissions to default to read-only with write access scoped at job level.",
+        "action_required": "Move all write permissions to job-level permissions blocks; set top-level permissions to read-only (contents: read) or omit."
     }
 ]
